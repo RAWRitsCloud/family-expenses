@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="theme-color" content="#26364a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Family Money">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Signed out · Our Family Money</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/icon-180.png">
+  <link rel="manifest" href="/app.webmanifest">
+  <link rel="stylesheet" href="/assets/root.css">
+  <link rel="stylesheet" href="/assets/auth.css">
+</head>
+<body data-auth-page="signed-out">
+  <section class="auth-screen signed-out-screen">
+    <div class="auth-card login-card signed-out-card">
+      <div class="auth-brand-block">
+        <img class="auth-logo" src="/assets/favicon.svg" alt="">
+        <strong>Family expenses app</strong>
+        <span class="auth-account-pill">Signed out</span>
+      </div>
+      <p class="eyebrow">Signed out</p>
+      <h1>You’re signed out of Our Family Money.</h1>
+      <p>Microsoft or GitHub may still remember you in this browser, so signing in again can be instant.</p>
+      <div class="login-options">
+        <a class="button button-ink login-button" href="/">Back to sign in <span>→</span></a>
+        <a class="button button-microsoft login-button" id="microsoftLogout" href="https://login.microsoftonline.com/common/oauth2/v2.0/logout">Sign out of Microsoft too</a>
+      </div>
+    </div>
+  </section>
+  <script src="/assets/auth.js" defer></script>
+</body>
+</html>

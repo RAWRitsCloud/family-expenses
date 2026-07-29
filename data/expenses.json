@@ -1,0 +1,408 @@
+{
+  "family": {
+    "children": [
+      {
+        "id": "rowan",
+        "name": "Rowan",
+        "initial": "Ro",
+        "color": "#2563eb"
+      },
+      {
+        "id": "ellis",
+        "name": "Ellis",
+        "initial": "El",
+        "color": "#10b981"
+      },
+      {
+        "id": "marnie",
+        "name": "Marnie",
+        "initial": "Ma",
+        "color": "#f59e0b"
+      }
+    ],
+    "payers": [
+      {
+        "id": "jo",
+        "name": "Jo",
+        "initial": "J",
+        "color": "#22c7d8"
+      },
+      {
+        "id": "tom",
+        "name": "Tom",
+        "initial": "T",
+        "color": "#7c3aed"
+      },
+      {
+        "id": "grandad",
+        "name": "Grandad",
+        "initial": "G",
+        "color": "#fb4b2b"
+      },
+      {
+        "id": "nanny",
+        "name": "Nanny",
+        "initial": "N",
+        "color": "#10b981"
+      }
+    ]
+  },
+  "categories": [
+    {
+      "name": "School",
+      "emoji": "🏫",
+      "color": "#2563eb"
+    },
+    {
+      "name": "Clubs",
+      "emoji": "⚽",
+      "color": "#7c3aed"
+    },
+    {
+      "name": "Health",
+      "emoji": "💙",
+      "color": "#0891b2"
+    },
+    {
+      "name": "Phone",
+      "emoji": "📱",
+      "color": "#f59e0b"
+    },
+    {
+      "name": "Entertainment",
+      "emoji": "🎟️",
+      "color": "#10b981"
+    },
+    {
+      "name": "Other",
+      "emoji": "✨",
+      "color": "#e11d48"
+    }
+  ],
+  "expenses": [
+    {
+      "name": "After-school Club",
+      "emoji": "🎨",
+      "children": [
+        "rowan"
+      ],
+      "category": "Clubs",
+      "monthlyCost": 42,
+      "paidBy": {
+        "jo": 22,
+        "tom": 0,
+        "grandad": 10,
+        "nanny": 10
+      },
+      "entries": [
+        {
+          "date": "2026-06-12",
+          "description": "Art workshop",
+          "amount": 18
+        },
+        {
+          "date": "2026-05-15",
+          "description": "Holiday craft session",
+          "amount": 24
+        }
+      ]
+    },
+    {
+      "name": "Breakfast Club",
+      "emoji": "🥣",
+      "children": [
+        "rowan",
+        "ellis"
+      ],
+      "category": "School",
+      "monthlyCost": 64,
+      "paidBy": {
+        "jo": 32,
+        "tom": 32,
+        "grandad": 0,
+        "nanny": 0
+      },
+      "entries": []
+    },
+    {
+      "name": "Cinema Club",
+      "emoji": "🎬",
+      "children": [
+        "marnie"
+      ],
+      "category": "Entertainment",
+      "monthlyCost": 18,
+      "paidBy": {
+        "jo": 0,
+        "tom": 18,
+        "grandad": 0,
+        "nanny": 0
+      },
+      "entries": []
+    },
+    {
+      "name": "Dance Class",
+      "emoji": "🩰",
+      "children": [
+        "marnie"
+      ],
+      "category": "Clubs",
+      "monthlyCost": 34,
+      "paidBy": {
+        "jo": 17,
+        "tom": 0,
+        "grandad": 0,
+        "nanny": 17
+      },
+      "entries": [
+        {
+          "date": "2026-04-04",
+          "description": "Show costume contribution",
+          "amount": 22
+        }
+      ]
+    },
+    {
+      "name": "Drama Lessons",
+      "emoji": "🎭",
+      "children": [
+        "ellis"
+      ],
+      "category": "Entertainment",
+      "monthlyCost": 38.5,
+      "paidBy": {
+        "jo": 18.5,
+        "tom": 20,
+        "grandad": 0,
+        "nanny": 0
+      },
+      "entries": []
+    },
+    {
+      "name": "Football Club",
+      "emoji": "⚽",
+      "children": [
+        "rowan"
+      ],
+      "category": "Clubs",
+      "monthlyCost": 24,
+      "paidBy": {
+        "jo": 24,
+        "tom": 0,
+        "grandad": 0,
+        "nanny": 0
+      },
+      "entries": [
+        {
+          "date": "2026-04-20",
+          "description": "Tournament fee",
+          "amount": 12
+        }
+      ]
+    },
+    {
+      "name": "Glasses Plan",
+      "emoji": "👓",
+      "children": [
+        "ellis"
+      ],
+      "category": "Health",
+      "monthlyCost": 18.75,
+      "paidBy": {
+        "jo": 18.75,
+        "tom": 0,
+        "grandad": 0,
+        "nanny": 0
+      },
+      "entries": []
+    },
+    {
+      "name": "Haircuts",
+      "emoji": "✂️",
+      "children": [
+        "rowan",
+        "ellis",
+        "marnie"
+      ],
+      "category": "Health",
+      "monthlyCost": 42,
+      "paidBy": {
+        "jo": 21,
+        "tom": 21,
+        "grandad": 0,
+        "nanny": 0
+      },
+      "entries": []
+    },
+    {
+      "name": "Holiday Camp",
+      "emoji": "🏕️",
+      "children": [
+        "rowan",
+        "ellis"
+      ],
+      "category": "Clubs",
+      "monthlyCost": 55,
+      "paidBy": {
+        "jo": 25,
+        "tom": 0,
+        "grandad": 15,
+        "nanny": 15
+      },
+      "entries": [
+        {
+          "date": "2026-07-01",
+          "description": "Summer camp deposit",
+          "amount": 75
+        },
+        {
+          "date": "2026-07-18",
+          "description": "Activity balance",
+          "amount": 90
+        }
+      ]
+    },
+    {
+      "name": "Maths Tutoring",
+      "emoji": "📚",
+      "children": [
+        "ellis"
+      ],
+      "category": "School",
+      "monthlyCost": 120,
+      "paidBy": {
+        "jo": 60,
+        "tom": 30,
+        "grandad": 30,
+        "nanny": 0
+      },
+      "entries": []
+    },
+    {
+      "name": "Mobile Top-up",
+      "emoji": "📱",
+      "children": [
+        "rowan"
+      ],
+      "category": "Phone",
+      "monthlyCost": 12,
+      "paidBy": {
+        "jo": 12,
+        "tom": 0,
+        "grandad": 0,
+        "nanny": 0
+      },
+      "entries": []
+    },
+    {
+      "name": "Music Lessons",
+      "emoji": "🎵",
+      "children": [
+        "rowan"
+      ],
+      "category": "Entertainment",
+      "monthlyCost": 46,
+      "paidBy": {
+        "jo": 23,
+        "tom": 23,
+        "grandad": 0,
+        "nanny": 0
+      },
+      "entries": []
+    },
+    {
+      "name": "Pocket Money",
+      "emoji": "💷",
+      "children": [
+        "rowan",
+        "ellis",
+        "marnie"
+      ],
+      "category": "Other",
+      "monthlyCost": 30,
+      "paidBy": {
+        "jo": 20,
+        "tom": 0,
+        "grandad": 0,
+        "nanny": 10
+      },
+      "entries": []
+    },
+    {
+      "name": "School Lunches",
+      "emoji": "🍽️",
+      "children": [
+        "marnie"
+      ],
+      "category": "School",
+      "monthlyCost": 72,
+      "paidBy": {
+        "jo": 0,
+        "tom": 72,
+        "grandad": 0,
+        "nanny": 0
+      },
+      "entries": []
+    },
+    {
+      "name": "Swimming Lessons",
+      "emoji": "🏊",
+      "children": [
+        "ellis"
+      ],
+      "category": "Clubs",
+      "monthlyCost": 36,
+      "paidBy": {
+        "jo": 16,
+        "tom": 0,
+        "grandad": 10,
+        "nanny": 10
+      },
+      "entries": [
+        {
+          "date": "2026-03-09",
+          "description": "Badge assessment",
+          "amount": 6
+        }
+      ]
+    },
+    {
+      "name": "Tablet Insurance",
+      "emoji": "🛡️",
+      "children": [
+        "marnie"
+      ],
+      "category": "Other",
+      "monthlyCost": 7.5,
+      "paidBy": {
+        "jo": 7.5,
+        "tom": 0,
+        "grandad": 0,
+        "nanny": 0
+      },
+      "entries": []
+    },
+    {
+      "name": "Train Pass",
+      "emoji": "🚆",
+      "children": [
+        "rowan"
+      ],
+      "category": "School",
+      "monthlyCost": 34.25,
+      "paidBy": {
+        "jo": 34.25,
+        "tom": 0,
+        "grandad": 0,
+        "nanny": 0
+      },
+      "entries": [
+        {
+          "date": "2026-09-03",
+          "description": "Autumn term pass",
+          "amount": 137
+        }
+      ]
+    }
+  ]
+}

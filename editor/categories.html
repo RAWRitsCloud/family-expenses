@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0f2742">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="/app.webmanifest">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/icon-180.png">
+  <title>Edit categories | Our Family Money</title>
+  <link rel="stylesheet" href="/assets/root.css">
+  <link rel="stylesheet" href="/assets/editor.css">
+</head>
+<body data-page="editor" data-editor-page="categories">
+  <div class="editor-page" id="app" hidden>
+    <header class="editor-page-head">
+      <a class="mobile-brand editor-brand" href="/" aria-label="Back to dashboard">
+        <span class="brand-badge"><img class="logo-mark" src="/assets/favicon.svg" alt=""></span>
+        <span><b>Our Family Money</b><small>Callum + Conaire</small></span>
+      </a>
+      <div class="editor-page-actions">
+        <span class="hello">Hi, <b id="signedInUser">there</b> 👋</span>
+        <a class="button button-ghost" href="/">Dashboard</a>
+        <a class="button button-ghost logout-button" id="logoutLink" href="/.auth/logout" title="Sign out">Sign out</a>
+      </div>
+    </header>
+    <main class="editor-page-main">
+      <section class="drawer editor-screen-panel open" id="editorDrawer" aria-hidden="false">
+        <div class="drawer-head">
+          <h2>Edit categories</h2>
+          <button class="close-button" id="closeEditor" aria-label="Back to dashboard">×</button>
+        </div>
+        <nav class="drawer-tabs" aria-label="Editor sections">
+          <a class="tab" href="/editor/expenses.html">Friendly editor</a>
+          <a class="tab active" href="/editor/categories.html">Categories</a>
+          <a class="tab" href="/editor/family.html">Family</a>
+          <a class="tab" href="/editor/json.html">JSON</a>
+        </nav>
+        <div class="drawer-body">
+          <section id="categoriesTab" class="category-manager">
+            <div class="category-manager-head">
+              <div>
+                <p class="eyebrow">Categories</p>
+                <h3>Emoji + chart colours</h3>
+                <p>These control the labels, chips and category bars. Expenses still keep their category name.</p>
+              </div>
+              <button class="button button-pop add-category-button" id="addCategory" type="button">＋ Add category</button>
+            </div>
+            <div class="emoji-field editor-page-emoji-home">
+              <div class="emoji-popover" id="emojiPopover" hidden>
+                <emoji-picker id="emojiPicker"></emoji-picker>
+              </div>
+            </div>
+            <div id="categoryEditorList" class="category-editor-list" aria-label="Categories to manage"></div>
+          </section>
+        </div>
+        <div class="drawer-foot">
+          <div class="status is-idle" id="status">Ready</div>
+          <div>
+            <button class="button button-ghost" id="cancelEditor">Cancel</button>
+            <button class="button button-ink" id="saveExpenses">Save to GitHub</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>

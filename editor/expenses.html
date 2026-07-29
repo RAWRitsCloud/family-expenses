@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0f2742">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="/app.webmanifest">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/icon-180.png">
+  <title>Edit expenses | Our Family Money</title>
+  <link rel="stylesheet" href="/assets/root.css">
+  <link rel="stylesheet" href="/assets/editor.css">
+</head>
+<body data-page="editor" data-editor-page="expenses">
+  <div class="editor-page" id="app" hidden>
+    <header class="editor-page-head">
+      <a class="mobile-brand editor-brand" href="/" aria-label="Back to dashboard">
+        <span class="brand-badge"><img class="logo-mark" src="/assets/favicon.svg" alt=""></span>
+        <span><b>Our Family Money</b><small>Callum + Conaire</small></span>
+      </a>
+      <div class="editor-page-actions">
+        <span class="hello">Hi, <b id="signedInUser">there</b> 👋</span>
+        <a class="button button-ghost" href="/">Dashboard</a>
+        <a class="button button-ghost logout-button" id="logoutLink" href="/.auth/logout" title="Sign out">Sign out</a>
+      </div>
+    </header>
+
+    <main class="editor-page-main">
+      <section class="drawer editor-screen-panel open" id="editorDrawer" aria-hidden="false">
+        <div class="drawer-head">
+          <h2>Edit expenses</h2>
+          <button class="close-button" id="closeEditor" aria-label="Back to dashboard">×</button>
+        </div>
+        <nav class="drawer-tabs" aria-label="Editor sections">
+          <a class="tab active" href="/editor/expenses.html">Friendly editor</a>
+          <a class="tab" href="/editor/categories.html">Categories</a>
+          <a class="tab" href="/editor/family.html">Family</a>
+          <a class="tab" href="/editor/json.html">JSON</a>
+        </nav>
+        <div class="drawer-body">
+          <section id="formTab" class="friendly-editor">
+            <div class="expense-picker">
+              <div class="expense-picker-actions">
+                <label class="editor-search"><span>Search costs</span><input id="expenseSearch" type="search" placeholder="Search costs" autocomplete="off"></label>
+                <button class="button button-pop add-expense-primary" id="addExpense" type="button">＋ Add cost</button>
+              </div>
+              <div id="expenseEditorList" class="expense-editor-list" aria-label="Expenses to edit"></div>
+            </div>
+
+            <form class="expense-detail-form" id="expenseDetailForm">
+              <div class="detail-empty" id="expenseDetailEmpty">
+                <div>
+                  <h3>Add a new expense or pick one to edit.</h3>
+                  <p>Nothing is selected yet, so you can choose exactly what happens next.</p>
+                  <button class="button button-pop" type="button" data-add-expense>＋ Add a new expense</button>
+                </div>
+              </div>
+              <div id="expenseDetailFields" hidden>
+                <div class="detail-head editor-detail-hero">
+                  <div class="editor-detail-title">
+                    <button class="button button-ghost detail-back" id="closeExpenseDetail" type="button">← Back</button>
+                    <span class="selected-expense-emoji" id="detailHeroEmoji" aria-hidden="true">📌</span>
+                    <div>
+                      <p class="eyebrow">Expense details</p>
+                      <h3 id="detailExpenseTitle">Expense</h3>
+                    </div>
+                    <span class="detail-cost-pill"><strong id="detailMonthlySummary">£0.00</strong><small>monthly</small></span>
+                  </div>
+                  <button class="remove-expense" id="removeSelectedExpense" type="button">Remove</button>
+                </div>
+
+                <div class="editor-detail-grid">
+                  <section class="detail-step-card detail-step-what">
+                    <div class="detail-step-title"><b>1</b><h4>What is it?</h4></div>
+                    <div class="detail-grid compact emoji-category-row">
+                      <label class="field-wide"><span>Expense name</span><input id="detailName" autocomplete="off"></label>
+                      <label class="emoji-field">
+                        <span>Icon</span>
+                        <button class="emoji-trigger" id="detailEmojiButton" type="button" aria-haspopup="dialog" aria-expanded="false" data-emoji-target="expense" aria-label="Choose expense emoji" title="Choose emoji">
+                          <span id="detailEmojiPreview" aria-hidden="true">📌</span>
+                        </button>
+                        <input id="detailEmoji" type="hidden" value="📌">
+                        <div class="emoji-popover" id="emojiPopover" hidden>
+                          <emoji-picker id="emojiPicker"></emoji-picker>
+                        </div>
+                      </label>
+                      <label class="detail-category-field"><span>Category</span><select id="detailCategory"></select></label>
+                    </div>
+                  </section>
+
+                  <section class="detail-step-card detail-step-children">
+                    <div class="detail-step-title"><b>2</b><h4>Who is it for?</h4></div>
+                    <div class="chip-field">
+                      <span>Children / cost centres</span>
+                      <div class="segmented" id="detailChildren"></div>
+                      <small>Select both for shared costs.</small>
+                    </div>
+                  </section>
+
+                  <section class="detail-step-card detail-step-cost">
+                    <div class="detail-step-title"><b>3</b><h4>Monthly cost</h4></div>
+                    <label class="field-wide"><span>Monthly cost</span><div class="money-input"><b>£</b><input id="detailMonthlyCost" type="number" min="0" step="0.01" inputmode="decimal"><em>/ month</em></div></label>
+                  </section>
+
+                  <section class="detail-step-card detail-step-contributions split-helper">
+                    <div class="split-helper-title detail-step-title"><b>4</b><h4>Contributions</h4><small id="splitCheckText">Paid amounts should match the monthly cost.</small></div>
+                    <div class="detail-grid compact payer-inputs" id="detailPayers"></div>
+                    <div class="split-buttons" id="splitButtons"></div>
+                  </section>
+
+                  <details class="detail-step-card detail-step-one-off one-off-helper">
+                    <summary><span><b>5</b><strong>Spread a one-off cost</strong></span><small id="oneOffPreview">Work out the monthly average and log the payment.</small></summary>
+                    <div class="one-off-grid">
+                      <label><span>Paid amount</span><div class="money-input"><b>£</b><input id="oneOffAmount" type="number" min="0" step="0.01" inputmode="decimal"></div></label>
+                      <label><span>Months</span><div class="months-input"><input id="oneOffMonths" type="number" min="1" step="1" inputmode="numeric" value="1"><em>mo</em></div></label>
+                    </div>
+                    <div class="detail-grid compact">
+                      <label><span>Date paid</span><input id="oneOffDate" type="date"></label>
+                      <label><span>Description</span><input id="oneOffDescription" autocomplete="off" placeholder="e.g. term pass"></label>
+                    </div>
+                    <button class="button button-pop" id="applyOneOffSpread" type="button">Use monthly average + log entry</button>
+                  </details>
+                </div>
+              </div>
+            </form>
+          </section>
+        </div>
+        <div class="drawer-foot">
+          <div class="status is-idle" id="status">Ready</div>
+          <div>
+            <button class="button button-ghost" id="cancelEditor">Cancel</button>
+            <button class="button button-ink" id="saveExpenses">Save to GitHub</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="theme-color" content="#26364a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Family Money">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Access denied · Our Family Money</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/icon-180.png">
+  <link rel="manifest" href="/app.webmanifest">
+  <link rel="stylesheet" href="/assets/root.css">
+  <link rel="stylesheet" href="/assets/auth.css">
+</head>
+<body data-auth-page="access-denied">
+  <main class="auth-screen">
+    <section class="auth-card login-card" aria-labelledby="deniedTitle">
+      <div class="auth-brand-block">
+        <img class="auth-logo" src="/assets/favicon.svg" alt="">
+        <strong>Family expenses app</strong>
+        <span class="auth-account-pill" id="signedInSummary">Checking account…</span>
+      </div>
+      <p class="eyebrow">Access not assigned</p>
+      <h1 id="deniedTitle">This account is not on the family list.</h1>
+      <p>Ask the site owner to assign the <strong>family</strong> role, or sign out and use another account.</p>
+      <details class="auth-details-panel">
+        <summary>Show sign-in details</summary>
+        <dl class="auth-diagnostics" id="accessDetails" aria-label="Signed in account details"></dl>
+      </details>
+      <div class="login-options">
+        <button class="button button-pop login-button" id="refreshAccess" type="button">Check access again</button>
+        <a class="button button-ink login-button" id="deniedLogout" href="/.auth/logout">Sign out</a>
+      </div>
+    </section>
+  </main>
+  <script src="/assets/auth.js" defer></script>
+</body>
+</html>

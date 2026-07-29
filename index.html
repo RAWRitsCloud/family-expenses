@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="theme-color" content="#26364a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Family Money">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Our Family Money</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/icon-180.png">
+  <link rel="manifest" href="/app.webmanifest">
+  <link rel="stylesheet" href="/assets/root.css">
+  <link rel="stylesheet" href="/assets/app.css">
+</head>
+<body>
+  <div class="app-loading" id="appLoading" role="status" aria-live="polite">
+    <img src="/assets/favicon.svg" alt="">
+    <span>Loading family money…</span>
+  </div>
+  <div class="app" id="app" hidden>
+    <div class="dashboard-layout">
+      <aside class="app-sidebar" aria-label="Family summary">
+        <a class="brand sidebar-brand" href="#top"><span class="brand-badge"><img class="logo-mark" src="/assets/favicon.svg" alt=""></span><span><b>Our Family Money</b><small id="sidebarFamilyNames">Family expenses</small></span></a>
+        <div class="sidebar-card sidebar-total" id="overview">
+          <span class="sidebar-label">Monthly</span>
+          <strong id="totalMonthly">£0.00</strong>
+          <small id="annualTotal">£0.00 per year</small>
+          <span class="sidebar-spark" aria-hidden="true"></span>
+        </div>
+        <div id="sidebarChildren" class="sidebar-children" aria-label="Children summary"></div>
+        <div class="sidebar-card sidebar-sync">
+          <div class="sync-head">
+            <span><i></i> GitHub status</span>
+            <button id="syncNow" type="button" title="Sync with GitHub" aria-label="Sync with GitHub">↻</button>
+          </div>
+          <small id="syncText">Loading data…</small>
+          <small class="sync-time" id="syncTime" hidden></small>
+          <details class="sync-error" id="syncError" hidden>
+            <summary>Details</summary>
+            <small id="syncErrorText"></small>
+          </details>
+        </div>
+      </aside>
+
+      <main id="top">
+        <header class="site-header">
+          <div class="header-actions"><span class="hello">Hi, <b id="signedInUser">there</b> 👋</span><button class="round-button" id="printReport" title="Print">⎙</button><a class="button button-ink" id="openEditor" href="/editor/expenses.html">＋ Add or edit</a><a class="button button-ghost logout-button" id="logoutLink" href="/.auth/logout" title="Sign out">Sign out</a></div>
+        </header>
+
+        <section class="mobile-summary" aria-label="Mobile family summary">
+          <div class="mobile-topbar">
+            <a class="brand mobile-brand" href="#top"><span class="brand-badge"><img class="logo-mark" src="/assets/favicon.svg" alt=""></span><span><b>Our Family Money</b><small id="mobileFamilyNames">Family expenses</small></span></a>
+            <div class="mobile-actions"><button class="round-button" id="mobilePrintReport" title="Print">⎙</button><a class="round-button" id="mobileOpenEditor" title="Add or edit" aria-label="Add or edit" href="/editor/expenses.html">＋</a></div>
+          </div>
+          <div class="sidebar-card sidebar-total">
+            <span class="sidebar-label">Monthly</span>
+            <strong id="mobileTotalMonthly">£0.00</strong>
+            <small id="mobileAnnualTotal">£0.00 per year</small>
+            <span class="sidebar-spark" aria-hidden="true"></span>
+          </div>
+          <div class="mobile-child-grid" id="mobileChildren"></div>
+        </section>
+
+      <section class="story-grid" id="insights">
+        <article class="panel category-panel">
+          <div class="panel-title"><div><p class="eyebrow">Categories</p><h2>Where it goes</h2></div><span class="doodle">↘</span></div>
+          <div class="category-chart" id="categoryBars"></div>
+        </article>
+        <article class="panel contributors-panel">
+          <div class="panel-title"><div><p class="eyebrow">Contributors</p><h2>Monthly split</h2></div></div>
+          <div class="contributor-grid" id="contributorCards" aria-label="Monthly contributors"></div>
+        </article>
+      </section>
+
+      <section class="panel expense-panel" id="expenses">
+        <div class="expense-top">
+          <div><p class="eyebrow">Expenses</p><h2>Monthly costs</h2><p>Filter, review or edit the items.</p></div>
+          <div class="filters"><label><span>For child</span><select id="childFilter"><option value="All">All children</option></select></label><label><span>What sort?</span><select id="categoryFilter"><option value="All">All categories</option></select></label><button class="button button-pop" id="resetFilters">Reset</button></div>
+        </div>
+        <div class="table-wrap"><table><thead><tr>
+          <th aria-sort="ascending"><button class="sort-button active" type="button" data-sort="expense">Expense <span class="sort-indicator" aria-hidden="true">↑</span></button></th>
+          <th aria-sort="none"><button class="sort-button" type="button" data-sort="children">For <span class="sort-indicator" aria-hidden="true"></span></button></th>
+          <th aria-sort="none"><button class="sort-button" type="button" data-sort="category">Category <span class="sort-indicator" aria-hidden="true"></span></button></th>
+          <th aria-sort="none"><button class="sort-button align-end" type="button" data-sort="monthly">Monthly <span class="sort-indicator" aria-hidden="true"></span></button></th>
+          <th aria-sort="none"><button class="sort-button align-end" type="button" data-sort="paid">Paid by <span class="sort-indicator" aria-hidden="true"></span></button></th>
+        </tr></thead><tbody id="expenseRows"></tbody></table></div>
+        <div class="mobile-expense-list" id="mobileExpenseRows" aria-label="Monthly expenses"></div>
+        <div class="table-footer"><span id="visibleCount">0 expenses</span></div>
+      </section>
+      </main>
+    </div>
+  </div>
+  <dialog class="entry-dialog" id="entryDialog">
+    <form method="dialog" id="entryForm">
+      <div class="entry-dialog-head"><div><p class="eyebrow">Add an entry</p><h2 id="entryDialogTitle">Expense</h2></div><button type="button" class="close-button" id="cancelEntry" aria-label="Close">×</button></div>
+      <div class="entry-dialog-fields">
+        <label><span>Date</span><input id="entryDate" type="date" required></label>
+        <label><span>Description</span><input id="entryDescription" maxlength="120" required autocomplete="off"></label>
+        <label><span>Amount</span><div class="money-input"><b>£</b><input id="entryAmount" type="number" min="0" step="0.01" inputmode="decimal" required></div></label>
+      </div>
+      <div class="entry-dialog-foot"><span id="entryDialogStatus" role="status"></span><button class="button button-ink" id="saveEntry" value="default">Save</button></div>
+    </form>
+  </dialog>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>

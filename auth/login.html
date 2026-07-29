@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="theme-color" content="#26364a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Family Money">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Sign in · Our Family Money</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/icon-180.png">
+  <link rel="manifest" href="/app.webmanifest">
+  <link rel="stylesheet" href="/assets/root.css">
+  <link rel="stylesheet" href="/assets/auth.css">
+</head>
+<body data-auth-page="login">
+  <main class="auth-screen">
+    <section class="auth-card login-card" aria-labelledby="loginTitle">
+      <div class="auth-brand-block">
+        <img class="auth-logo" src="/assets/favicon.svg" alt="">
+        <strong>Family expenses app</strong>
+      </div>
+      <p class="eyebrow">Sign in</p>
+      <h1 id="loginTitle">Choose your account</h1>
+      <p>Sign in with the account that has been invited to the family role.</p>
+      <div class="login-options">
+        <a class="button button-ink login-button" id="githubLogin" href="/.auth/login/github">Continue with GitHub <span>→</span></a>
+        <a class="button button-microsoft login-button" id="entraLogin" href="/.auth/login/aad">Continue with Microsoft <span>→</span></a>
+      </div>
+      <small>Access is limited to invited family members.</small>
+    </section>
+  </main>
+  <script src="/assets/auth.js" defer></script>
+</body>
+</html>

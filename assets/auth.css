@@ -1,0 +1,251 @@
+/* Sign-in, access-denied and signed-out page styles. */
+
+.auth-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  overflow: hidden;
+  background: #f3f7fc
+}
+
+.auth-card {
+  position: relative;
+  z-index: 2;
+  width: min(560px, 100%);
+  padding: 48px;
+  text-align: center;
+  background: #fff;
+  border: 2px solid var(--ink);
+  border-radius: 32px;
+  box-shadow: 10px 10px 0 var(--ink)
+}
+
+.auth-card h1 {
+  font-size: clamp(34px, 6vw, 55px);
+  line-height: 1;
+  letter-spacing: -.04em;
+  margin: 10px 0 17px
+}
+
+.auth-card h1 em {
+  font-family: Georgia, serif;
+  color: var(--pink);
+  font-weight: 500
+}
+
+.auth-card>p:not(.eyebrow) {
+  font-size: 17px;
+  color: var(--muted)
+}
+
+.auth-card small {
+  display: block;
+  margin-top: 15px;
+  color: var(--muted)
+}
+
+.login-button {
+  margin-top: 14px
+}
+
+@media(max-width:640px) {
+  .auth-card {
+      padding: 34px 23px
+    }
+}
+
+@media print {
+  .site-header,
+    .filters,
+    .drawer,
+    .auth-screen,
+    .button {
+      display: none
+    }
+}
+
+.auth-card {
+  width: min(500px, 100%);
+  padding: 38px
+}
+
+.auth-card h1 {
+  font-size: clamp(32px, 5vw, 46px);
+  line-height: 1.05
+}
+
+.login-options {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px
+}
+
+.login-options .login-button {
+  margin-top: 0
+}
+
+.button-microsoft {
+  background: #fff;
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--yellow)
+}
+
+@media(max-width:640px) {
+  .auth-card {
+      padding: 30px 22px
+    }
+}
+
+.auth-card {
+  border: 1px solid rgba(31, 41, 55, .12);
+  box-shadow: 0 28px 80px rgba(31, 41, 55, .16);
+}
+
+.auth-screen {
+  padding: max(18px, env(safe-area-inset-top, 0px)) max(18px, env(safe-area-inset-right, 0px)) max(18px, env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px));
+  background:
+    radial-gradient(circle at 18% 0%, rgba(37, 99, 235, .10), transparent 34%),
+    radial-gradient(circle at 92% 16%, rgba(124, 58, 237, .10), transparent 32%),
+    #f3f7fc;
+}
+
+.auth-card {
+  width: min(540px, 100%);
+  padding: clamp(24px, 5vw, 42px);
+  border: 1px solid #dfe7f2;
+  border-radius: 28px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, .12);
+}
+
+.auth-card h1 {
+  margin: 10px 0 12px;
+  color: #142235;
+  font-size: clamp(30px, 5vw, 44px);
+  line-height: 1.05;
+}
+
+.auth-card > p:not(.eyebrow) {
+  margin: 0 auto;
+  max-width: 40ch;
+  color: #667085;
+}
+
+.auth-brand-block {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin: 0 auto 22px;
+  color: #142235;
+}
+
+.auth-logo {
+  display: block;
+  width: 72px;
+  height: 72px;
+}
+
+.auth-brand-block strong {
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.login-options {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.auth-account-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 7px 11px;
+  border: 1px solid #c7d7fe;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: #194185;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.auth-account-pill svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
+.auth-details-panel {
+  margin: 18px 0 0;
+  text-align: left;
+}
+
+.auth-details-panel summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #475467;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.auth-details-panel summary::after {
+  content: "⌄";
+  color: #667085;
+}
+
+.auth-details-panel[open] summary::after {
+  content: "⌃";
+}
+
+.auth-diagnostics {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px 14px;
+  margin: 10px 0 0;
+  padding: 14px;
+  text-align: left;
+  border: 1px solid #dfe7f2;
+  border-radius: 16px;
+  background: #f8fbff;
+}
+
+.auth-diagnostics dt,
+.auth-diagnostics dd {
+  margin: 0;
+  min-width: 0;
+}
+
+.auth-diagnostics dt {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.auth-diagnostics dd {
+  color: #142235;
+  font-size: 13px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+@media(max-width:640px) {
+  .auth-diagnostics {
+      grid-template-columns: 1fr;
+      gap: 4px;
+    }
+
+  .auth-diagnostics dd {
+      margin-bottom: 8px;
+    }
+}
