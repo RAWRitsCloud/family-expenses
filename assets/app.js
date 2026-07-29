@@ -26,6 +26,8 @@ let tableSort = { key: "expense", direction: "asc" };
 let lastResumeSyncAt = 0;
 let activeEmojiTarget = null;
 const isEditorPage = document.body.dataset.page === "editor";
+const appMode = window.FAMILY_EXPENSES_APP_MODE === "demo" ? "demo" : "live";
+const isDemoMode = appMode === "demo";
 
 const $ = id => document.getElementById(id);
 const setText = (id, text) => { const element = $(id); if (element) element.textContent = text; };
@@ -531,6 +533,16 @@ function liveExpensesRequest() {
   });
 }
 
+async function loadDeployedData() {
+  const deployed = await fetch(`/data/expenses.json?_=${Date.now()}`, { cache: "no-store" });
+  if (deployed.status === 401 || deployed.status === 403) {
+    await authenticate({ force: true });
+    return null;
+  }
+  if (!deployed.ok) throw new Error(`Local data returned ${deployed.status}.`);
+  return deployed.json();
+}
+
 function formatSyncTime(date = new Date()) {
   const today = new Date();
   const sameDay = date.toDateString() === today.toDateString();
@@ -577,9 +589,17 @@ async function syncFromGitHub(request = liveExpensesRequest()) {
   const button = $("syncNow");
   lastResumeSyncAt = Date.now();
   if (button) button.disabled = true;
-  setText("syncText", "Syncing with GitHub…");
+  setText("syncText", isDemoMode ? "Loading demo data…" : "Syncing with GitHub…");
   setSyncError();
   try {
+    if (isDemoMode) {
+      const sessionData = readDemoSessionData();
+      apply(sessionData || await loadDeployedData());
+      setText("syncText", sessionData ? "Demo session restored" : "Demo data loaded");
+      setStatus("Ready");
+      return true;
+    }
+
     const live = await requestLiveExpensesWithRetry(request);
     if (live.status === 401 || live.status === 403) {
       setStatus("Refreshing access…");
@@ -623,17 +643,25 @@ async function load() {
     return;
   }
 
+  if (isDemoMode) {
+    try {
+      apply(await loadDeployedData());
+      setText("syncText", "Demo data loaded");
+      setStatus("Ready");
+    } catch (error) {
+      setSyncError(error.message || "Demo data could not be loaded.");
+      setStatus("No expense data could be loaded.", true);
+    }
+    return;
+  }
+
   const synced = await syncFromGitHub();
   if (synced) return;
 
   try {
-    const deployed = await fetch(`/data/expenses.json?_=${Date.now()}`, { cache: "no-store" });
-    if (deployed.status === 401 || deployed.status === 403) {
-      await authenticate({ force: true });
-      return;
-    }
-    if (!deployed.ok) throw new Error(`Local data returned ${deployed.status}.`);
-    apply(await deployed.json());
+    const deployedData = await loadDeployedData();
+    if (!deployedData) return;
+    apply(deployedData);
     setText("syncText", "Local copy used");
     setStatus("Ready");
   } catch (error) {
@@ -671,6 +699,13 @@ function openEntryDialog(expenseIndex) {
 
 async function persist(next, successText = "Synced with GitHub") {
   const validated = validate(structuredClone(next));
+  if (isDemoMode) {
+    writeDemoSessionData(validated);
+    apply(validated);
+    setText("syncText", "Demo changes saved for this session");
+    return;
+  }
+
   const r = await fetch("/api/expenses", {
     method: "PUT",
     credentials: "same-origin",

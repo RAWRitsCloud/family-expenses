@@ -66,7 +66,7 @@ For a public demo Static Web App, leave the GitHub settings blank. When `GITHUB_
 - `GET /api/expenses` returns local bundled demo data where available;
 - `PUT /api/expenses` validates changes and returns success without writing to GitHub.
 
-The dashboard also has a static fallback to `/data/expenses.json`, so the demo can still load fake data even if the API cannot see the bundled data file.
+The dashboard reads `/data/expenses.json` directly in demo mode, so it can show fake data immediately without waiting for the API.
 
 Demo saves are kept in browser `sessionStorage`, so edits survive moving between the dashboard and editor, and survive refreshes in the same tab. They are not shared with other visitors and disappear when the browser session is cleared.
 
@@ -182,7 +182,7 @@ If the GitHub write fails, the editor shows the error and keeps the user on the 
 
 ## Local fallback behaviour
 
-The dashboard tries to load live data first.
+The live dashboard tries to load live data first.
 
 If that fails, it falls back to:
 

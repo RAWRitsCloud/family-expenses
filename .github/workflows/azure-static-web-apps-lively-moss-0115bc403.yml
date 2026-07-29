@@ -43,6 +43,7 @@ jobs:
           mkdir dist-demo
           cp -r assets auth data editor app.webmanifest index.html dist-demo/
           cp staticwebapp.config.demo.json dist-demo/staticwebapp.config.json
+          printf 'window.FAMILY_EXPENSES_APP_MODE = "demo";\n' > dist-demo/assets/runtime-config.js
 
       - name: Verify demo route config
         run: node -e "const config=require('./dist-demo/staticwebapp.config.json'); const editor=config.routes.find(route => route.route === '/editor/*'); if (!editor || !editor.allowedRoles.includes('anonymous')) throw new Error('Demo route config is not anonymous');"

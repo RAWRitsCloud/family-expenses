@@ -43,6 +43,7 @@ jobs:
           mkdir dist-live
           cp -r assets auth data editor app.webmanifest index.html dist-live/
           cp staticwebapp.config.live.json dist-live/staticwebapp.config.json
+          printf 'window.FAMILY_EXPENSES_APP_MODE = "live";\n' > dist-live/assets/runtime-config.js
 
       - name: Verify live route config
         run: node -e "const config=require('./dist-live/staticwebapp.config.json'); const editor=config.routes.find(route => route.route === '/editor/*'); if (!editor || !editor.allowedRoles.includes('family')) throw new Error('Live route config is not protected');"
