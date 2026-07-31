@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
 import { Plus, Trash2, Search, ChevronRight, ArrowLeft, SlidersHorizontal, Calculator } from "lucide-react";
-import { getExpenses, getCategoryData, getFamilyData } from "../../api/expensesApi";
+import { getCategoryData, getFamilyData } from "../../api/expensesApi";
 
 export default function Expenses() {
-  const location = useLocation();
-  const payload = location.state?.payload;
-
-  const [rawData, setRawData] = useState(null);
+  // Shared editor state lives in EditorShell so the "Save to GitHub" button
+  // persists the edits made here.
+  const { payload: rawData, setPayload: setRawData } = useOutletContext();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeView, setActiveView] = useState("list");
@@ -16,24 +15,6 @@ export default function Expenses() {
   const [showCalculator, setShowCalculator] = useState(false);
   const [calcAmount, setCalcAmount] = useState("");
   const [calcMonths, setCalcMonths] = useState(1);
-
-  useEffect(() => {
-    let ignore = false;
-    if (payload) {
-      setRawData(payload);
-      return () => { ignore = true; };
-    }
-    async function loadPayload() {
-      try {
-        const data = await getExpenses();
-        if (!ignore) setRawData(data);
-      } catch {
-        if (!ignore) setRawData(null);
-      }
-    }
-    loadPayload();
-    return () => { ignore = true; };
-  }, [payload]);
 
   const categories = useMemo(() => getCategoryData(rawData || {}), [rawData]);
   const family = useMemo(() => getFamilyData(rawData || {}), [rawData]);

@@ -1,7 +1,5 @@
-import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
 import { Plus, Trash2, Heart, Users } from "lucide-react";
-import { getExpenses } from "../../api/expensesApi";
 
 const generateId = (name) =>
   name.toLowerCase().trim().replace(/\s+/g, "_") || `item_${Date.now()}`;
@@ -10,27 +8,8 @@ const generateInitial = (name) =>
   (name.trim().charAt(0) || "?").toUpperCase();
 
 export default function Family() {
-  const location = useLocation();
-  const payload = location.state?.payload;
-  const [rawData, setRawData] = useState(null);
-
-  useEffect(() => {
-    let ignore = false;
-    if (payload) {
-      setRawData(payload);
-      return () => { ignore = true; };
-    }
-    async function loadPayload() {
-      try {
-        const data = await getExpenses();
-        if (!ignore) setRawData(data);
-      } catch {
-        if (!ignore) setRawData(null);
-      }
-    }
-    loadPayload();
-    return () => { ignore = true; };
-  }, [payload]);
+  // Shared editor state lives in EditorShell so edits are included when saving.
+  const { payload: rawData, setPayload: setRawData } = useOutletContext();
 
   const family = rawData?.family || { children: [], payers: [] };
 

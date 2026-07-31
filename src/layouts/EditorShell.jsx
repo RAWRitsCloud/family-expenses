@@ -10,13 +10,15 @@ import {
   CloudUpload,
   LogOut
 } from "lucide-react";
-import { getExpenses, getFamilyDisplayNames } from "../api/expensesApi";
+import { getExpenses, getFamilyDisplayNames, saveExpenses } from "../api/expensesApi";
 
 export default function EditorShell() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [payload, setPayload] = useState(null);
+  const [payload, setPayload] = useState(location.state?.payload || null);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const [lastSaved, setLastSaved] = useState(null);
 
   useEffect(() => {
     if (location.state?.payload) {
@@ -37,10 +39,25 @@ export default function EditorShell() {
   const familyNames = getFamilyDisplayNames(payload || {});
 
   const handleSave = async () => {
+    if (!payload || isSaving) return;
     setIsSaving(true);
-    setTimeout(() => {
+    setSaveError(null);
+    try {
+      const result = await saveExpenses(payload);
+      setLastSaved(new Date());
+      // The API returns { saved: false } when GitHub persistence isn't configured
+      // (demo mode) — surface that so the user knows it wasn't actually committed.
+      if (result && result.saved === false) {
+        setSaveError(
+          result.message ||
+            "Changes were validated but not saved to GitHub — persistence is not configured on the server."
+        );
+      }
+    } catch (err) {
+      setSaveError(err.message || "Could not save changes.");
+    } finally {
       setIsSaving(false);
-    }, 600);
+    }
   };
 
   const handleExit = () => {
@@ -207,10 +224,17 @@ export default function EditorShell() {
 
           <div className="mt-4 pt-3 border-top border-secondary border-opacity-25 d-flex flex-column gap-2 flex-shrink-0">
             <div className="d-flex align-items-center gap-2 px-2 text-muted small">
-              <CheckCircle2 size={16} className="text-success flex-shrink-0" />
+              <CheckCircle2
+                size={16}
+                className={`flex-shrink-0 ${saveError ? "text-danger" : lastSaved ? "text-success" : "text-secondary"}`}
+              />
               <div>
-                <div className="text-white small fw-semibold" style={{ fontSize: "0.8rem" }}>All changes saved</div>
-                <div style={{ fontSize: "0.70rem", color: "#6c757d" }}>Just now</div>
+                <div className="text-white small fw-semibold" style={{ fontSize: "0.8rem" }}>
+                  {saveError ? "Not saved" : lastSaved ? "All changes saved" : "Unsaved changes"}
+                </div>
+                <div style={{ fontSize: "0.70rem", color: "#6c757d" }}>
+                  {lastSaved ? lastSaved.toLocaleTimeString() : "Save to commit to GitHub"}
+                </div>
               </div>
             </div>
 
@@ -237,7 +261,15 @@ export default function EditorShell() {
 
         {/* 4. MAIN CONTENT AREA */}
         <main className="col-12 col-lg p-3 p-lg-4 overflow-hidden">
-          <Outlet />
+          {saveError && (
+            <div className="alert alert-danger alert-dismissible d-flex align-items-start gap-2 p-3 small mb-3" role="alert">
+              <div className="flex-grow-1">
+                <strong>Couldn't save:</strong> {saveError}
+              </div>
+              <button type="button" className="btn-close" aria-label="Dismiss" onClick={() => setSaveError(null)} />
+            </div>
+          )}
+          <Outlet context={{ payload, setPayload }} />
         </main>
 
       </div>
