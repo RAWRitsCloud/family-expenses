@@ -79,8 +79,9 @@ export default function EditorShell() {
     }
   };
 
-  const handleSave = () => {
-    doSave();
+  const handleSave = async () => {
+    const ok = await doSave();
+    if (ok) navigate("/", { state: { payload } });
   };
 
   const handleExit = () => {

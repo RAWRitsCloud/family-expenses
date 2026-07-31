@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, Fragment } from "react";
+import { useEffect, useMemo, useRef, useState, Fragment } from "react";
 import { Link } from "react-router-dom";
-import { PencilRuler, LogOut, ChevronDown, Receipt, Plus, Trash2 } from "lucide-react";
+import { PencilRuler, LogOut, ChevronDown, Receipt, Plus, Trash2, Pencil, Check, X } from "lucide-react";
 import {
   getExpenses,
   saveExpenses,
@@ -99,6 +99,9 @@ export default function Dashboard() {
   const [entrySaving, setEntrySaving] = useState(false);
   const [entryError, setEntryError] = useState(null);
   const [sortBy, setSortBy] = useState({ key: "name", dir: "asc" });
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const pendingDeleteTimer = useRef(null);
+  const [editing, setEditing] = useState(null);
 
   useEffect(() => {
     let ignore = false;
@@ -431,8 +434,47 @@ export default function Dashboard() {
     persistPayload({ ...payload, expenses: nextExpenses });
   };
 
-  const deleteEntry = (rawIndex, entryRef) =>
-    mutateEntries(rawIndex, (entries) => entries.filter((e) => e !== entryRef));
+  // Inline two-step delete: first click arms ("Confirm?"), second click removes.
+  // Auto-disarms after a few seconds so it never gets stuck.
+  const handleDeleteClick = (rawIndex, entry) => {
+    if (pendingDeleteTimer.current) clearTimeout(pendingDeleteTimer.current);
+    if (pendingDelete === entry) {
+      setPendingDelete(null);
+      mutateEntries(rawIndex, (entries) => entries.filter((e) => e !== entry));
+    } else {
+      setPendingDelete(entry);
+      pendingDeleteTimer.current = setTimeout(() => setPendingDelete(null), 3500);
+    }
+  };
+
+  // Inline edit: the pencil turns the row into inputs with tick/cross actions.
+  const startEdit = (rawIndex, entry) =>
+    setEditing({
+      entry,
+      rawIndex,
+      date: entry.date || today(),
+      description: entry.description || "",
+      amount: String(entry.amount ?? ""),
+    });
+  const cancelEdit = () => setEditing(null);
+  const updateEditing = (field, value) => setEditing((prev) => ({ ...prev, [field]: value }));
+  const editingValid = (e) =>
+    Boolean(e) &&
+    Boolean(e.description.trim()) &&
+    Number.isFinite(Number(e.amount)) &&
+    Number(e.amount) >= 0;
+  const saveEdit = () => {
+    if (!editingValid(editing)) return;
+    const { entry, rawIndex } = editing;
+    const updated = {
+      date: editing.date || today(),
+      description: editing.description.trim(),
+      amount: Number(editing.amount),
+    };
+    mutateEntries(rawIndex, (entries) => entries.map((e) => (e === entry ? updated : e)));
+    setEditing(null);
+  };
+  const isEditing = (entry) => Boolean(editing) && editing.entry === entry;
 
   const openDraft = (rowKey) =>
     setDrafts((prev) => ({ ...prev, [rowKey]: { date: today(), description: "", amount: "" } }));
@@ -471,6 +513,7 @@ export default function Dashboard() {
     if (!draft) return null;
     return (
       <div className="border rounded-3 p-2 mt-2 bg-white" onClick={(e) => e.stopPropagation()}>
+        <div className="fw-semibold small mb-2">Record payment</div>
         <div className="row g-2">
           <div className="col-12 col-sm-4">
             <label className="form-label small text-muted mb-1">Date</label>
@@ -588,33 +631,116 @@ export default function Dashboard() {
                     <th>Date</th>
                     <th>Description</th>
                     <th className="text-end">Amount</th>
-                    <th>Notes</th>
-                    <th></th>
+                    <th style={{ width: "96px" }}></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {visible.map((entry, i) => (
-                    <tr key={i}>
-                      <td className="text-nowrap">{formatEntryDate(entry.date)}</td>
-                      <td>{entry.description || "—"}</td>
-                      <td className="text-end fw-semibold">{formatCurrency(entry.amount)}</td>
-                      <td className="text-muted">{entry.note || entry.notes || "—"}</td>
-                      <td className="text-end" style={{ width: "40px" }}>
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-link text-danger p-0"
-                          aria-label="Delete payment"
-                          disabled={entrySaving}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteEntry(rawIndex, entry);
-                          }}
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {visible.map((entry, i) =>
+                    isEditing(entry) ? (
+                      <tr key={i} onClick={(e) => e.stopPropagation()}>
+                        <td>
+                          <input
+                            type="date"
+                            className="form-control form-control-sm"
+                            value={editing.date}
+                            onChange={(e) => updateEditing("date", e.target.value)}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            className="form-control form-control-sm"
+                            value={editing.description}
+                            onChange={(e) => updateEditing("description", e.target.value)}
+                          />
+                        </td>
+                        <td>
+                          <div className="input-group input-group-sm">
+                            <span className="input-group-text">£</span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              className="form-control"
+                              value={editing.amount}
+                              onChange={(e) => updateEditing("amount", e.target.value)}
+                            />
+                          </div>
+                        </td>
+                        <td className="text-end">
+                          <div className="d-flex justify-content-end gap-1">
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-success p-1 lh-1 d-inline-flex"
+                              aria-label="Save changes"
+                              disabled={!editingValid(editing) || entrySaving}
+                              onClick={saveEdit}
+                            >
+                              <Check size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-light border p-1 lh-1 d-inline-flex"
+                              aria-label="Cancel edit"
+                              onClick={cancelEdit}
+                            >
+                              <X size={15} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      <tr key={i}>
+                        <td className="text-nowrap">{formatEntryDate(entry.date)}</td>
+                        <td>{entry.description || "—"}</td>
+                        <td className="text-end fw-semibold">{formatCurrency(entry.amount)}</td>
+                        <td className="text-end">
+                          <div className="d-flex justify-content-end align-items-center gap-1">
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-link text-secondary p-0"
+                              aria-label="Edit payment"
+                              disabled={entrySaving}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startEdit(rawIndex, entry);
+                              }}
+                            >
+                              <Pencil size={15} />
+                            </button>
+                            {pendingDelete === entry ? (
+                              <button
+                                type="button"
+                                className="btn btn-danger btn-sm py-0 px-2"
+                                style={{ fontSize: "0.7rem" }}
+                                aria-label="Confirm delete payment"
+                                disabled={entrySaving}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteClick(rawIndex, entry);
+                                }}
+                              >
+                                Confirm?
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-link text-danger p-0"
+                                aria-label="Delete payment"
+                                disabled={entrySaving}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteClick(rawIndex, entry);
+                                }}
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  )}
                 </tbody>
               </table>
             </div>
@@ -639,42 +765,124 @@ export default function Dashboard() {
         {sortedEntries.length > 0
           ? (
             <>
-              {visible.map((entry, i) => (
-                <div
-                  key={i}
-                  className="d-flex align-items-center justify-content-between gap-2 bg-light border rounded-3 p-2"
-                >
-                  <div className="d-flex align-items-center gap-2 overflow-hidden">
-                    <span
-                      className="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary bg-opacity-10 text-primary flex-shrink-0"
-                      style={{ width: "32px", height: "32px" }}
-                    >
-                      <Receipt size={15} />
-                    </span>
-                    <div className="overflow-hidden">
-                      <div className="fw-semibold small text-truncate">{formatEntryDate(entry.date)}</div>
-                      <div className="text-muted text-truncate" style={{ fontSize: "0.75rem" }}>
-                        {entry.description || "—"}
+              {visible.map((entry, i) =>
+                isEditing(entry) ? (
+                  <div
+                    key={i}
+                    className="bg-light border rounded-3 p-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="d-flex flex-column gap-2">
+                      <input
+                        type="date"
+                        className="form-control form-control-sm"
+                        value={editing.date}
+                        onChange={(e) => updateEditing("date", e.target.value)}
+                      />
+                      <input
+                        type="text"
+                        className="form-control form-control-sm"
+                        placeholder="Description"
+                        value={editing.description}
+                        onChange={(e) => updateEditing("description", e.target.value)}
+                      />
+                      <div className="input-group input-group-sm">
+                        <span className="input-group-text">£</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          className="form-control"
+                          value={editing.amount}
+                          onChange={(e) => updateEditing("amount", e.target.value)}
+                        />
+                      </div>
+                      <div className="d-flex justify-content-end gap-2">
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-light border d-inline-flex align-items-center gap-1"
+                          aria-label="Cancel edit"
+                          onClick={cancelEdit}
+                        >
+                          <X size={15} /> Cancel
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-success d-inline-flex align-items-center gap-1"
+                          aria-label="Save changes"
+                          disabled={!editingValid(editing) || entrySaving}
+                          onClick={saveEdit}
+                        >
+                          <Check size={15} /> Save
+                        </button>
                       </div>
                     </div>
                   </div>
-                  <div className="d-flex align-items-center gap-2 flex-shrink-0">
-                    <span className="fw-bold small text-nowrap">{formatCurrency(entry.amount)}</span>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-link text-danger p-0"
-                      aria-label="Delete payment"
-                      disabled={entrySaving}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteEntry(rawIndex, entry);
-                      }}
-                    >
-                      <Trash2 size={15} />
-                    </button>
+                ) : (
+                  <div
+                    key={i}
+                    className="d-flex align-items-center justify-content-between gap-2 bg-light border rounded-3 p-2"
+                  >
+                    <div className="d-flex align-items-center gap-2 overflow-hidden">
+                      <span
+                        className="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary bg-opacity-10 text-primary flex-shrink-0"
+                        style={{ width: "32px", height: "32px" }}
+                      >
+                        <Receipt size={15} />
+                      </span>
+                      <div className="overflow-hidden">
+                        <div className="fw-semibold small text-truncate">{formatEntryDate(entry.date)}</div>
+                        <div className="text-muted text-truncate" style={{ fontSize: "0.75rem" }}>
+                          {entry.description || "—"}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="d-flex align-items-center gap-2 flex-shrink-0">
+                      <span className="fw-bold small text-nowrap">{formatCurrency(entry.amount)}</span>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-link text-secondary p-0"
+                        aria-label="Edit payment"
+                        disabled={entrySaving}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          startEdit(rawIndex, entry);
+                        }}
+                      >
+                        <Pencil size={15} />
+                      </button>
+                      {pendingDelete === entry ? (
+                        <button
+                          type="button"
+                          className="btn btn-danger btn-sm py-0 px-2"
+                          style={{ fontSize: "0.7rem" }}
+                          aria-label="Confirm delete payment"
+                          disabled={entrySaving}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(rawIndex, entry);
+                          }}
+                        >
+                          Confirm?
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-link text-danger p-0"
+                          aria-label="Delete payment"
+                          disabled={entrySaving}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(rawIndex, entry);
+                          }}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              )}
               {renderViewAll(rowKey, sortedEntries.length)}
             </>
           )
