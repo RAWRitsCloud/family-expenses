@@ -30,7 +30,7 @@ export default function EmojiField({
       {open && (
         <>
           <div className="modal fade show d-block" tabIndex="-1" role="dialog" style={{ zIndex: 1075 }}>
-            <div className="modal-dialog modal-dialog-centered modal">
+            <div className="modal-dialog modal-dialog-centered modal-lg">
               <div className="modal-content border-0 shadow rounded-4 overflow-hidden">
                 <div className="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
                   <span className="fw-semibold small">Pick an emoji</span>
@@ -51,6 +51,7 @@ export default function EmojiField({
                     }}
                     emojiStyle="native"
                     width="100%"
+                    height="60vh"
                     lazyLoadEmojis
                     previewConfig={{ showPreview: false }}
                   />
