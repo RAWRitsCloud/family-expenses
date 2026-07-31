@@ -1,9 +1,15 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/auth';
+import { isDemoMode } from '../config/appMode';
 
 export const ProtectedRoute = () => {
   const { user, loading } = useAuth();
+
+  // Public demo deployment: everything is open, no sign-in required.
+  if (isDemoMode()) {
+    return <Outlet />;
+  }
 
   if (loading) {
     return (

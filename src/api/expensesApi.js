@@ -1,6 +1,37 @@
 import localExpensesData from "../data/expenses.json";
+import { isDemoMode } from "../config/appMode";
+
+// Demo deployments never touch the server or GitHub. Edits are kept in
+// sessionStorage so they survive navigation and refresh, then clear when the
+// browser session ends.
+const DEMO_STORAGE_KEY = "family-expenses-demo-data";
+
+function readDemoSession() {
+  if (typeof sessionStorage === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(DEMO_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeDemoSession(data) {
+  if (typeof sessionStorage === "undefined") return;
+  try {
+    sessionStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(data));
+  } catch {
+    // Ignore quota / private-mode write failures — demo data is non-critical.
+  }
+}
 
 export async function getExpenses() {
+  // In demo mode, prefer any edits the visitor has made this session.
+  if (isDemoMode()) {
+    const stored = readDemoSession();
+    if (stored) return parseImportedExpensesPayload(stored);
+  }
+
   try {
     const response = await fetch("/api/expenses", { cache: "no-store" });
     if (!response.ok) throw new Error("Could not load expenses");
@@ -11,6 +42,13 @@ export async function getExpenses() {
 }
 
 export async function saveExpenses(data) {
+  // Demo mode: persist to the browser session only, never to the server/GitHub.
+  if (isDemoMode()) {
+    const nextData = parseImportedExpensesPayload(data);
+    writeDemoSession(nextData);
+    return { saved: true, demo: true, message: "Saved for this demo session." };
+  }
+
   const response = await fetch("/api/expenses", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },

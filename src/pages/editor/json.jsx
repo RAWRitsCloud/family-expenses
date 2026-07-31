@@ -1,36 +1,33 @@
-import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import { Sparkles } from "lucide-react";
-import { getExpenses } from "../../api/expensesApi";
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 
 export default function JsonEditor() {
-  const location = useLocation();
-  const payload = location.state?.payload;
+  useDocumentTitle("JSON Editor");
+  // Shared editor state lives in EditorShell so JSON edits are included when saving.
+  const { payload, setPayload } = useOutletContext();
   const [jsonText, setJsonText] = useState("{}");
   const [error, setError] = useState(null);
+  const hydrated = useRef(false);
 
+  // Seed the textarea from the shared payload once it's available. We guard with
+  // a ref so typing (which pushes parsed JSON back into the shared payload) doesn't
+  // cause the payload change to overwrite what the user is editing.
   useEffect(() => {
-    if (payload) {
+    if (!hydrated.current && payload) {
       setJsonText(JSON.stringify(payload, null, 2));
-      return;
+      hydrated.current = true;
     }
-    async function loadPayload() {
-      try {
-        const data = await getExpenses();
-        setJsonText(JSON.stringify(data, null, 2));
-      } catch {
-        setJsonText("{}");
-      }
-    }
-    loadPayload();
   }, [payload]);
 
   const handleChange = (e) => {
     const value = e.target.value;
     setJsonText(value);
     try {
-      JSON.parse(value);
+      const parsed = JSON.parse(value);
       setError(null);
+      setPayload(parsed);
     } catch (err) {
       setError(err.message);
     }
@@ -40,6 +37,7 @@ export default function JsonEditor() {
     try {
       const parsed = JSON.parse(jsonText);
       setJsonText(JSON.stringify(parsed, null, 2));
+      setPayload(parsed);
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -65,12 +63,6 @@ export default function JsonEditor() {
           </button>
         </div>
       </div>
-
-      {error && (
-        <div className="alert alert-danger p-2 small mb-3">
-          <strong>Invalid JSON syntax:</strong> {error}
-        </div>
-      )}
 
       {error && (
         <div className="alert alert-danger p-2 small mb-3">

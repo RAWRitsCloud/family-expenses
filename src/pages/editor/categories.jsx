@@ -1,30 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useMemo } from "react";
+import { useOutletContext } from "react-router-dom";
 import { Plus, Trash2 } from "lucide-react";
-import { getExpenses } from "../../api/expensesApi";
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 
 export default function Categories() {
-  const location = useLocation();
-  const payload = location.state?.payload;
-  const [rawData, setRawData] = useState(null);
-
-  useEffect(() => {
-    let ignore = false;
-    if (payload) {
-      setRawData(payload);
-      return () => { ignore = true; };
-    }
-    async function loadPayload() {
-      try {
-        const data = await getExpenses();
-        if (!ignore) setRawData(data);
-      } catch {
-        if (!ignore) setRawData(null);
-      }
-    }
-    loadPayload();
-    return () => { ignore = true; };
-  }, [payload]);
+  useDocumentTitle("Categories");
+  // Shared editor state lives in EditorShell so edits are included when saving.
+  const { payload: rawData, setPayload: setRawData } = useOutletContext();
 
   const categories = rawData?.categories || [];
   const expenses = rawData?.expenses || [];

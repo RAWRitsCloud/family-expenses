@@ -2,8 +2,10 @@ import React from 'react';
 import brandIcon from "../assets/favicon.svg";
 import { LogIn, LogOut, ShieldCheck } from "lucide-react";
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
 export default function AccessDenied() {
+  useDocumentTitle("Access denied");
   const handleLogout = () => {
     window.location.href = `/.auth/logout`;
   };
