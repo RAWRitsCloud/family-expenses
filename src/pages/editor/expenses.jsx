@@ -364,32 +364,34 @@ export default function Expenses() {
                   </div>
                 </div>
 
-                {/* Who is this for? Checkboxes */}
+                {/* Who is this for? */}
                 <div className="bg-light p-3 rounded-4 border">
                   <div className="d-flex align-items-center gap-2 mb-1">
                     <span className="text-secondary">👤</span>
                     <h6 className="fw-bold small text-dark mb-0">Who is this for?</h6>
                   </div>
                   <p className="text-muted small mb-3" style={{ fontSize: "0.75rem" }}>Select the children this expense is for.</p>
-                  
+
                   <div className="d-flex flex-wrap gap-2">
                     {family.children.map((child) => {
                       const isChecked = activeExpense.children?.includes(child.id);
+                      const cColor = child.color || "#2563eb";
                       return (
-                        <div
+                        <button
                           key={child.id}
+                          type="button"
                           onClick={() => toggleChild(child.id)}
-                          className={`d-flex align-items-center gap-2 px-3 py-2 rounded-3 border bg-white shadow-sm transition-all`}
-                          style={{ cursor: "pointer", borderColor: isChecked ? "#2563eb" : "#dee2e6" }}
+                          aria-pressed={!!isChecked}
+                          className="btn fw-semibold px-3 py-2"
+                          style={{
+                            backgroundColor: isChecked ? cColor : "transparent",
+                            borderColor: cColor,
+                            borderWidth: "2px",
+                            color: isChecked ? "#fff" : cColor,
+                          }}
                         >
-                          <input
-                            type="checkbox"
-                            className="form-check-input m-0 cursor-pointer"
-                            checked={!!isChecked}
-                            onChange={() => {}}
-                          />
-                          <span className="small fw-semibold text-dark">{child.name}</span>
-                        </div>
+                          {child.name}
+                        </button>
                       );
                     })}
                   </div>
@@ -501,12 +503,15 @@ export default function Expenses() {
                     })}
                   </div>
 
-                  {/* Payer action buttons */}
+                  {/* Payer action buttons: a consistent-size button group. Every
+                      button is forced to a single line (with ellipsis as a
+                      fallback for long names) so they're always the same
+                      height, whichever row they wrap to on mobile. */}
                   <div className="row g-2">
                     <div className="col-6 col-lg">
                       <button
                         type="button"
-                        className="btn btn-outline-secondary bg-white fw-semibold w-100 py-2"
+                        className="btn btn-outline-secondary bg-white fw-semibold w-100 py-2 text-truncate"
                         onClick={handleSplitEvenly}
                       >
                         Split evenly
@@ -518,7 +523,7 @@ export default function Expenses() {
                         <div key={p.id} className="col-6 col-lg">
                           <button
                             type="button"
-                            className="btn text-white fw-semibold w-100 py-2"
+                            className="btn text-white fw-semibold w-100 py-2 text-truncate"
                             style={{ backgroundColor: pColor, borderColor: pColor }}
                             onClick={() => handlePayerPaysAll(p.id)}
                           >
