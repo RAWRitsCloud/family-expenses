@@ -152,7 +152,10 @@ export default function Expenses() {
 
   const renderExpenseCard = (exp, { expired = false } = {}) => {
     const originalIndex = expenses.indexOf(exp);
-    const isSelected = originalIndex === selectedIndex;
+    // Only show as "selected" once actually open in the edit pane — on mobile
+    // the list is its own full-screen view, and highlighting index 0 there
+    // by default made it look picked before the user had tapped anything.
+    const isSelected = activeView === "edit" && originalIndex === selectedIndex;
 
     const assignedChildrenNames = (exp.children || [])
       .map((childId) => family.children.find((c) => c.id === childId)?.name)
