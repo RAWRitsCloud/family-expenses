@@ -5,33 +5,33 @@
 <h1 align="center">Our Family Money</h1>
 
 <p align="center">
-  Know exactly what your family's monthly costs are, and who's paying for what — without a spreadsheet, a database, or a subscription.
+  A small, GitHub-backed tracker for our family's expected monthly child costs — who pays what, split by kid and category.
 </p>
 
 <p align="center">
-  <a href="https://expenses-demo.rawritscloud.com"><strong>Try the live demo →</strong></a>
+  <a href="https://expenses-demo.rawritscloud.com"><strong>View the demo →</strong></a>
 </p>
 
 <p align="center">
   <img src="./public/Dashboard-Screenshot.png" alt="Our Family Money dashboard" width="900">
 </p>
 
-Kids' expenses add up fast — camps, activities, school costs, subscriptions — and they're rarely split evenly. Our Family Money gives you one clean dashboard for what you expect to pay each month, who's covering it, and which child it's for, plus a running log of what's actually been paid.
+Kids' expenses add up from a bunch of directions — camps, activities, school costs, subscriptions — and they don't split evenly. This started as a way to stop guessing: one dashboard for what we expect to pay each month, who's covering it, and which child it's for, plus a log of what's actually been paid.
 
-No database to host, no accounts to manage, no monthly bill for yet another app. Your data lives in a single JSON file version-controlled on GitHub, so every change is backed up, reviewable, and easy to undo — just like code.
+There's no database. The data is a single JSON file tracked in GitHub, so changes are easy to review, back up, and undo, same as any other commit.
 
 ---
 
-## Why you'll like it
+## What it does
 
-- **See it all at a glance** — monthly total, yearly projection, and a breakdown by child and category, with a chart that makes it obvious where the money goes.
-- **Fair splits, made visible** — every expense shows exactly who pays what, and how much each contributor covers overall.
-- **Log real payments, not just plans** — record and delete actual payment entries inline, right from the dashboard.
-- **Find things fast** — sort and filter the expense table by child, category, name, or cost; a clean card view kicks in on mobile.
-- **Edit without fear** — a friendly editor for expenses, categories, and family members, plus a raw JSON editor for power users, all with an unsaved-changes safety net.
-- **Share it safely** — run a public demo that looks and feels real but never touches your actual data, while your private family data stays in a private repo.
-- **Family-only, by default** — sign in with GitHub or Microsoft; only approved family members can see or change anything in live mode.
-- **Feels like a real app** — install it to your phone or desktop home screen as a PWA and open it full-screen, no browser chrome.
+- Monthly total and yearly projection, broken down by child and category, with a chart.
+- Every expense shows who pays what, and how much each contributor covers overall.
+- Record and delete actual payment entries inline, right from the dashboard.
+- Sort and filter the expense table by child, category, name, or cost; a card layout on mobile.
+- An editor for expenses, categories, and family members, plus a raw JSON editor for bulk edits, with an unsaved-changes prompt.
+- A public demo that looks real but never touches the actual data — handy for showing people what it does without exposing our numbers.
+- Sign-in required in live mode (GitHub or Microsoft), restricted to family members.
+- Installable to a phone or desktop home screen as a PWA.
 
 <p align="center">
   <img src="./public/Dashboard-Screenshot-Mobile.png" alt="Our Family Money dashboard on mobile" width="320">
@@ -71,7 +71,7 @@ Want to run the full stack with real authentication and GitHub saving, or deploy
 
 ---
 
-## How your data is organized
+## Data model
 
 Everything lives in one JSON file (`src/data/expenses.json` for the bundled demo data), with three sections:
 
