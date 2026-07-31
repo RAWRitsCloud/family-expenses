@@ -22,7 +22,8 @@ export default function App() {
 
           {/* Protected Routes (Requires 'family' role) */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<Dashboard />} />
 
             <Route path="/editor" element={<EditorShell />}>
               <Route index element={<Navigate to="/editor/expenses" replace />} />

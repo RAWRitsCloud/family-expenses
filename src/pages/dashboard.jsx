@@ -902,7 +902,7 @@ export default function Dashboard() {
         <aside className="col-lg-3 col-xl-2 bg-dark text-white p-3 d-flex flex-column justify-content-between">
           <div>
             <div className="d-flex align-items-center justify-content-between mb-lg-4">
-              <Link className="d-flex align-items-center gap-2 text-white text-decoration-none" to="/">
+              <Link className="d-flex align-items-center gap-2 text-white text-decoration-none" to="/Dashboard">
                 <img src={brandIcon} alt="" width="38" height="38" />
                 <span>
                   <strong className="d-block">Our Family Money</strong>

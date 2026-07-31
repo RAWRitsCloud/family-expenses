@@ -18,13 +18,6 @@
     {
       "route": "/assets/*",
       "allowedRoles": ["anonymous"]
-    },
-    {
-      "route": "/*",
-      "allowedRoles": ["family"],
-      "headers": {
-        "Cache-Control": "no-store"
-      }
     }
   ],
   "navigationFallback": {

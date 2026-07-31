@@ -81,7 +81,7 @@ export default function EditorShell() {
 
   const handleSave = async () => {
     const ok = await doSave();
-    if (ok) navigate("/", { state: { payload } });
+    if (ok) navigate("/Dashboard", { state: { payload } });
   };
 
   const handleExit = () => {
@@ -89,20 +89,20 @@ export default function EditorShell() {
       setExitPromptOpen(true);
       return;
     }
-    navigate("/", { state: { payload } });
+    navigate("/Dashboard", { state: { payload } });
   };
 
   const handleDiscardExit = () => {
     setExitPromptOpen(false);
     // Discard edits; the dashboard reloads the last saved data.
-    navigate("/");
+    navigate("/Dashboard");
   };
 
   const handleSaveExit = async () => {
     const ok = await doSave();
     if (ok) {
       setExitPromptOpen(false);
-      navigate("/", { state: { payload } });
+      navigate("/Dashboard", { state: { payload } });
     }
   };
 
