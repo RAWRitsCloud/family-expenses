@@ -192,6 +192,7 @@ Each expense is an expected monthly cost:
 - `paidBy` uses payer IDs as keys; values should add up to `monthlyCost`.
 - `emoji` is the emoji for this specific expense (the category has its own too).
 - `entries` is optional history and does **not** change the monthly average.
+- `endDate` (optional, `YYYY-MM-DD`) is the expected last date this expense applies. Once it passes, the expense is automatically excluded from the dashboard — the table, totals, chart, and payer/child splits — but stays visible (shaded, grouped under "Ended") and editable in the Expenses editor.
 
 ### Entries
 

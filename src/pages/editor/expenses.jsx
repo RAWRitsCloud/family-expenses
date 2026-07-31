@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { Plus, Trash2, Search, ChevronRight, ArrowLeft, SlidersHorizontal, Calculator } from "lucide-react";
-import { getCategoryData, getFamilyData } from "../../api/expensesApi";
+import { getCategoryData, getFamilyData, isExpenseActive } from "../../api/expensesApi";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 import EmojiField from "../../components/EmojiField";
 
@@ -28,6 +28,18 @@ export default function Expenses() {
       .filter((e) => e.name?.toLowerCase().includes(searchTerm.toLowerCase()))
       .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   }, [expenses, searchTerm]);
+
+  // Active expenses are shown first; expired ones (past their expected end
+  // date) are grouped below and shaded, but stay editable/deletable here —
+  // only the dashboard hides them entirely.
+  const activeFilteredExpenses = useMemo(
+    () => filteredExpenses.filter((e) => isExpenseActive(e)),
+    [filteredExpenses]
+  );
+  const expiredFilteredExpenses = useMemo(
+    () => filteredExpenses.filter((e) => !isExpenseActive(e)),
+    [filteredExpenses]
+  );
 
   useEffect(() => {
     if (expenses.length > 0 && selectedIndex === null) {
@@ -138,6 +150,59 @@ export default function Expenses() {
     setShowCalculator(false);
   };
 
+  const renderExpenseCard = (exp, { expired = false } = {}) => {
+    const originalIndex = expenses.indexOf(exp);
+    const isSelected = originalIndex === selectedIndex;
+
+    const assignedChildrenNames = (exp.children || [])
+      .map((childId) => family.children.find((c) => c.id === childId)?.name)
+      .filter(Boolean);
+
+    return (
+      <div
+        key={`${exp.name}-${originalIndex}`}
+        onClick={() => handleSelectExpense(originalIndex)}
+        className={`card p-3 border rounded-3 transition-all ${
+          isSelected
+            ? "border-primary bg-primary bg-opacity-10 shadow-sm"
+            : "border-light bg-light"
+        }`}
+        style={{ cursor: "pointer", opacity: expired && !isSelected ? 0.6 : 1 }}
+      >
+        <div className="d-flex align-items-center justify-content-between">
+          <div className="d-flex align-items-center gap-3">
+            <span className="fs-3 bg-white p-2 rounded-3 border shadow-sm">{exp.emoji || "📦"}</span>
+            <div>
+              <strong className="d-block text-dark small fw-bold">{exp.name}</strong>
+              <div className="d-flex flex-wrap gap-1 mt-1">
+                {assignedChildrenNames.map((name, i) => (
+                  <span key={i} className="badge bg-white text-secondary border fw-normal" style={{ fontSize: "0.65rem" }}>
+                    {name}
+                  </span>
+                ))}
+                <span className="badge bg-white text-success border fw-normal" style={{ fontSize: "0.65rem" }}>
+                  {exp.category}
+                </span>
+                {expired && (
+                  <span className="badge bg-white text-muted border fw-normal" style={{ fontSize: "0.65rem" }}>
+                    Ended {exp.endDate}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="d-flex align-items-center gap-2">
+            <div className="text-end">
+              <strong className="d-block text-dark small">£{Number(exp.monthlyCost || 0).toFixed(2)}</strong>
+              <small className="text-muted" style={{ fontSize: "0.65rem" }}>/ month</small>
+            </div>
+            <ChevronRight size={16} className="text-muted" />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="container-fluid p-0">
       {/* Top Header Row */}
@@ -183,51 +248,22 @@ export default function Expenses() {
             </div>
 
             <div className="d-flex flex-column gap-2 pe-1">
-              {filteredExpenses.map((exp) => {
-                const originalIndex = expenses.indexOf(exp);
-                const isSelected = originalIndex === selectedIndex;
-                
-                const assignedChildrenNames = (exp.children || [])
-                  .map(childId => family.children.find(c => c.id === childId)?.name)
-                  .filter(Boolean);
+              {activeFilteredExpenses.map((exp) => renderExpenseCard(exp))}
 
-                return (
-                  <div
-                    key={`${exp.name}-${originalIndex}`}
-                    onClick={() => handleSelectExpense(originalIndex)}
-                    className={`card p-3 border rounded-3 transition-all ${
-                      isSelected ? "border-primary bg-primary bg-opacity-10 shadow-sm" : "border-light bg-light"
-                    }`}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <div className="d-flex align-items-center justify-content-between">
-                      <div className="d-flex align-items-center gap-3">
-                        <span className="fs-3 bg-white p-2 rounded-3 border shadow-sm">{exp.emoji || "📦"}</span>
-                        <div>
-                          <strong className="d-block text-dark small fw-bold">{exp.name}</strong>
-                          <div className="d-flex flex-wrap gap-1 mt-1">
-                            {assignedChildrenNames.map((name, i) => (
-                              <span key={i} className="badge bg-white text-secondary border fw-normal" style={{ fontSize: "0.65rem" }}>
-                                {name}
-                              </span>
-                            ))}
-                            <span className="badge bg-white text-success border fw-normal" style={{ fontSize: "0.65rem" }}>
-                              {exp.category}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="d-flex align-items-center gap-2">
-                        <div className="text-end">
-                          <strong className="d-block text-dark small">£{Number(exp.monthlyCost || 0).toFixed(2)}</strong>
-                          <small className="text-muted" style={{ fontSize: "0.65rem" }}>/ month</small>
-                        </div>
-                        <ChevronRight size={16} className="text-muted" />
-                      </div>
-                    </div>
+              {expiredFilteredExpenses.length > 0 && (
+                <>
+                  <div className="d-flex align-items-center gap-2 mt-2 mb-1 px-1">
+                    <span
+                      className="text-uppercase text-muted fw-bold"
+                      style={{ fontSize: "0.65rem", letterSpacing: "0.05em" }}
+                    >
+                      Ended
+                    </span>
+                    <div className="flex-grow-1 border-top" />
                   </div>
-                );
-              })}
+                  {expiredFilteredExpenses.map((exp) => renderExpenseCard(exp, { expired: true }))}
+                </>
+              )}
             </div>
             <div className="small text-muted pt-3 px-1">{expenses.length} expenses</div>
           </div>
@@ -379,6 +415,35 @@ export default function Expenses() {
                   </div>
                 </div>
 
+                {/* Expected End Date */}
+                <div className="bg-light p-3 rounded-4 border">
+                  <div className="d-flex align-items-center gap-2 mb-1">
+                    <span className="text-secondary">🗓️</span>
+                    <h6 className="fw-bold small text-dark mb-0">Expected end date</h6>
+                  </div>
+                  <p className="text-muted small mb-2" style={{ fontSize: "0.75rem" }}>
+                    Optional. Once this date passes, the expense is hidden from the dashboard automatically.
+                  </p>
+                  <div className="d-flex align-items-center gap-2">
+                    <input
+                      type="date"
+                      className="form-control form-control-sm bg-white"
+                      style={{ maxWidth: "220px" }}
+                      value={activeExpense.endDate || ""}
+                      onChange={(e) => updateActiveExpense("endDate", e.target.value || undefined)}
+                    />
+                    {activeExpense.endDate && (
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary btn-sm"
+                        onClick={() => updateActiveExpense("endDate", undefined)}
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 {/* Contributors Breakdown */}
                 <div className="bg-light p-3 rounded-4 border">
                   <div className="d-flex justify-content-between align-items-center mb-1">
@@ -437,27 +502,29 @@ export default function Expenses() {
                   </div>
 
                   {/* Payer action buttons */}
-                  <div className="d-flex flex-wrap gap-1">
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary btn-sm bg-white"
-                      onClick={handleSplitEvenly}
-                      style={{ fontSize: "0.75rem" }}
-                    >
-                      Split evenly
-                    </button>
+                  <div className="row g-2">
+                    <div className="col-6 col-lg">
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary bg-white fw-semibold w-100 py-2"
+                        onClick={handleSplitEvenly}
+                      >
+                        Split evenly
+                      </button>
+                    </div>
                     {family.payers.map((p) => {
                       const pColor = p.color || "#2563eb";
                       return (
-                        <button
-                          key={p.id}
-                          type="button"
-                          className="btn btn-sm text-white fw-semibold"
-                          style={{ backgroundColor: pColor, borderColor: pColor, fontSize: "0.75rem" }}
-                          onClick={() => handlePayerPaysAll(p.id)}
-                        >
-                          {p.name} pays all
-                        </button>
+                        <div key={p.id} className="col-6 col-lg">
+                          <button
+                            type="button"
+                            className="btn text-white fw-semibold w-100 py-2"
+                            style={{ backgroundColor: pColor, borderColor: pColor }}
+                            onClick={() => handlePayerPaysAll(p.id)}
+                          >
+                            {p.name} pays all
+                          </button>
+                        </div>
                       );
                     })}
                   </div>

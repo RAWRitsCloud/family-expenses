@@ -137,7 +137,28 @@ export function getExpenseData(payload) {
       description: entry?.description || "",
       amount: Number(entry?.amount || 0),
     })),
+    endDate: expense?.endDate || null,
   }));
+}
+
+// An expense with no endDate is always active. One with an endDate is active
+// through that date (inclusive) and becomes inactive the day after.
+export function isExpenseActive(expense, referenceDate = new Date()) {
+  const endDate = expense?.endDate;
+  if (!endDate) return true;
+  const todayStr =
+    referenceDate instanceof Date ? referenceDate.toISOString().slice(0, 10) : String(referenceDate);
+  return String(endDate) >= todayStr;
+}
+
+// Returns a copy of the payload with expired expenses removed, for views
+// (like the dashboard) that should only reflect what's currently active.
+export function getActiveExpensesPayload(payload, referenceDate = new Date()) {
+  const data = parseImportedExpensesPayload(payload);
+  return {
+    ...data,
+    expenses: (data.expenses || []).filter((expense) => isExpenseActive(expense, referenceDate)),
+  };
 }
 
 export function GetPayeeTotalsWithNames(payload) {

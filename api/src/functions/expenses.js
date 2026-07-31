@@ -193,6 +193,17 @@ function validatePayload(value) {
       throw new Error(`Expense ${index + 1}: emoji must be text.`);
     }
 
+    if (expense.endDate !== undefined) {
+      const trimmedEndDate = typeof expense.endDate === "string" ? expense.endDate.trim() : "";
+      if (!trimmedEndDate) {
+        delete expense.endDate;
+      } else if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmedEndDate)) {
+        throw new Error(`Expense ${index + 1}: endDate must be YYYY-MM-DD.`);
+      } else {
+        expense.endDate = trimmedEndDate;
+      }
+    }
+
     if (typeof expense.monthlyCost !== "number" || !Number.isFinite(expense.monthlyCost) || expense.monthlyCost < 0) {
       throw new Error(`Expense ${index + 1}: monthlyCost must be zero or a positive number.`);
     }

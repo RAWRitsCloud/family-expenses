@@ -7,6 +7,7 @@ import {
   getFamilyDisplayNames,
   getCategoryData,
   getExpenseData,
+  getActiveExpensesPayload,
   GetPayeeTotalsWithNames,
   GetChildTotalsWithNames,
 } from "../api/expensesApi";
@@ -120,19 +121,25 @@ export default function Dashboard() {
     };
   }, []);
 
+  // Expired expenses (past their expected end date) are excluded from the whole
+  // dashboard — the table, totals, chart, and payer/child splits — so the
+  // numbers on screen always match what's actually listed. They remain fully
+  // visible/editable in the Expenses editor.
+  const activePayload = useMemo(() => getActiveExpensesPayload(payload || {}), [payload]);
+
   const categories = useMemo(() => getCategoryData(payload || {}), [payload]);
-  const expenses = useMemo(() => getExpenseData(payload || {}), [payload]);
+  const expenses = useMemo(() => getExpenseData(activePayload), [activePayload]);
   const familyNames = getFamilyDisplayNames(payload || {});
 
   const payeeTotals = useMemo(() => {
     if (!payload) return [];
-    return GetPayeeTotalsWithNames(payload);
-  }, [payload]);
+    return GetPayeeTotalsWithNames(activePayload);
+  }, [payload, activePayload]);
 
   const childTotals = useMemo(() => {
     if (!payload) return [];
-    return GetChildTotalsWithNames(payload);
-  }, [payload]);
+    return GetChildTotalsWithNames(activePayload);
+  }, [payload, activePayload]);
 
   const totalMonthlyCost = useMemo(
     () => expenses.reduce((sum, expense) => sum + Number(expense.monthlyCost || 0), 0),
