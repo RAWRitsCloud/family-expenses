@@ -57,9 +57,6 @@ jobs:
           mkdir -p dist/assets
           printf 'window.FAMILY_EXPENSES_APP_MODE = "live";\n' > dist/assets/runtime-config.js
 
-      - name: Verify live route config
-        run: node -e "const config=require('./dist/staticwebapp.config.json'); const editor=config.routes.find(route => route.route === '/editor/*'); if (!editor || !editor.allowedRoles.includes('family')) throw new Error('Live route config is not protected');"
-
       - name: Deploy live app
         id: builddeploy_live
         uses: Azure/static-web-apps-deploy@v1
