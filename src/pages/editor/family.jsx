@@ -15,6 +15,15 @@ export default function Family() {
 
   const family = rawData?.family || { children: [], payers: [] };
 
+  // Display alphabetically while keeping each person's original index so edit and
+  // delete still target the right item in the underlying data.
+  const orderedChildren = (family.children || [])
+    .map((child, index) => ({ child, index }))
+    .sort((a, b) => (a.child.name || "").localeCompare(b.child.name || ""));
+  const orderedPayers = (family.payers || [])
+    .map((payer, index) => ({ payer, index }))
+    .sort((a, b) => (a.payer.name || "").localeCompare(b.payer.name || ""));
+
   const updateChildName = (index, newName) => {
     const updatedChildren = [...family.children];
     const current = updatedChildren[index];
@@ -160,7 +169,7 @@ export default function Family() {
             <p className="text-muted small mb-3" style={{ fontSize: "0.75rem" }}>Configure household dependents linked to specific expenses.</p>
 
             <div className="d-flex flex-column gap-3">
-              {family.children.map((child, index) => (
+              {orderedChildren.map(({ child, index }) => (
                 <div key={child.id || index} className="p-3 rounded-4 border bg-light shadow-sm">
                   <div className="row g-2 align-items-center">
                     <div className="col-auto">
@@ -231,7 +240,7 @@ export default function Family() {
             <p className="text-muted small mb-3" style={{ fontSize: "0.75rem" }}>Manage individuals responsible for covering household costs.</p>
 
             <div className="d-flex flex-column gap-3">
-              {family.payers.map((payer, index) => (
+              {orderedPayers.map(({ payer, index }) => (
                 <div key={payer.id || index} className="p-3 rounded-4 border bg-light shadow-sm">
                   <div className="row g-2 align-items-center">
                     <div className="col-auto">

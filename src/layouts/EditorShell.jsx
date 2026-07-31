@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
 import brandIcon from "../assets/favicon.svg";
 import {
@@ -19,15 +19,25 @@ export default function EditorShell() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [lastSaved, setLastSaved] = useState(null);
+  const [exitPromptOpen, setExitPromptOpen] = useState(false);
+  // Snapshot of the last saved/loaded payload, used to detect unsaved changes.
+  const savedSnapshotRef = useRef(null);
+  const rememberSnapshot = (data) => {
+    savedSnapshotRef.current = JSON.stringify(data ?? null);
+  };
 
   useEffect(() => {
     if (location.state?.payload) {
       setPayload(location.state.payload);
+      // Only baseline on first load, not on tab-to-tab navigation (which carries
+      // the in-progress payload) — otherwise dirty tracking would reset.
+      if (savedSnapshotRef.current === null) rememberSnapshot(location.state.payload);
     } else {
       async function loadPayload() {
         try {
           const data = await getExpenses();
           setPayload(data);
+          rememberSnapshot(data);
         } catch {
           setPayload(null);
         }
@@ -38,30 +48,61 @@ export default function EditorShell() {
 
   const familyNames = getFamilyDisplayNames(payload || {});
 
-  const handleSave = async () => {
-    if (!payload || isSaving) return;
+  const isDirty =
+    Boolean(payload) &&
+    savedSnapshotRef.current !== null &&
+    JSON.stringify(payload) !== savedSnapshotRef.current;
+
+  const doSave = async () => {
+    if (!payload || isSaving) return false;
     setIsSaving(true);
     setSaveError(null);
     try {
       const result = await saveExpenses(payload);
-      setLastSaved(new Date());
       // The API returns { saved: false } when GitHub persistence isn't configured
-      // (demo mode) — surface that so the user knows it wasn't actually committed.
+      // (live server without settings) — surface it and treat as not saved.
       if (result && result.saved === false) {
         setSaveError(
           result.message ||
             "Changes were validated but not saved to GitHub — persistence is not configured on the server."
         );
+        return false;
       }
+      setLastSaved(new Date());
+      rememberSnapshot(payload);
+      return true;
     } catch (err) {
       setSaveError(err.message || "Could not save changes.");
+      return false;
     } finally {
       setIsSaving(false);
     }
   };
 
+  const handleSave = () => {
+    doSave();
+  };
+
   const handleExit = () => {
+    if (isDirty) {
+      setExitPromptOpen(true);
+      return;
+    }
     navigate("/", { state: { payload } });
+  };
+
+  const handleDiscardExit = () => {
+    setExitPromptOpen(false);
+    // Discard edits; the dashboard reloads the last saved data.
+    navigate("/");
+  };
+
+  const handleSaveExit = async () => {
+    const ok = await doSave();
+    if (ok) {
+      setExitPromptOpen(false);
+      navigate("/", { state: { payload } });
+    }
   };
 
   return (
@@ -254,7 +295,7 @@ export default function EditorShell() {
               onClick={handleExit}
             >
               <LogOut size={16} />
-              <span>Cancel</span>
+              <span>Exit</span>
             </button>
           </div>
         </aside>
@@ -273,6 +314,66 @@ export default function EditorShell() {
         </main>
 
       </div>
+
+      {/* Unsaved-changes prompt on exit (styled in-app modal, not window.confirm) */}
+      {exitPromptOpen && (
+        <>
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog" style={{ zIndex: 1055 }}>
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content border-0 shadow rounded-4">
+                <div className="modal-header border-0 pb-0">
+                  <h5 className="modal-title fw-bold">Unsaved changes</h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    aria-label="Keep editing"
+                    onClick={() => setExitPromptOpen(false)}
+                  />
+                </div>
+                <div className="modal-body pt-2">
+                  <p className="text-muted mb-0">
+                    You have unsaved changes. Do you want to save them before leaving?
+                  </p>
+                  {saveError && (
+                    <div className="alert alert-danger py-2 px-3 small mt-3 mb-0">{saveError}</div>
+                  )}
+                </div>
+                <div className="modal-footer border-0 pt-0 flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="btn btn-light"
+                    onClick={() => setExitPromptOpen(false)}
+                  >
+                    Keep editing
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline-danger"
+                    onClick={handleDiscardExit}
+                    disabled={isSaving}
+                  >
+                    Exit without saving
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary d-inline-flex align-items-center gap-2"
+                    onClick={handleSaveExit}
+                    disabled={isSaving}
+                  >
+                    <CloudUpload size={16} />
+                    {isSaving ? "Saving…" : "Save & exit"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            className="modal-backdrop fade show"
+            style={{ zIndex: 1050 }}
+            onClick={() => setExitPromptOpen(false)}
+          />
+        </>
+      )}
     </div>
   );
 }

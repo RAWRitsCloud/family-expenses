@@ -23,9 +23,9 @@ export default function Expenses() {
   const expenses = rawData?.expenses || [];
 
   const filteredExpenses = useMemo(() => {
-    return expenses.filter((e) =>
-      e.name?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    return expenses
+      .filter((e) => e.name?.toLowerCase().includes(searchTerm.toLowerCase()))
+      .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   }, [expenses, searchTerm]);
 
   useEffect(() => {

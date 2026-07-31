@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState, Fragment } from "react";
 import { Link } from "react-router-dom";
-import { PencilRuler, LogOut, ChevronDown, Receipt } from "lucide-react";
+import { PencilRuler, LogOut, ChevronDown, Receipt, Plus, Trash2 } from "lucide-react";
 import {
   getExpenses,
+  saveExpenses,
   getFamilyDisplayNames,
   getCategoryData,
   getExpenseData,
@@ -94,6 +95,10 @@ export default function Dashboard() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [expandedRows, setExpandedRows] = useState(() => new Set());
   const [showAllEntries, setShowAllEntries] = useState(() => new Set());
+  const [drafts, setDrafts] = useState({});
+  const [entrySaving, setEntrySaving] = useState(false);
+  const [entryError, setEntryError] = useState(null);
+  const [sortBy, setSortBy] = useState({ key: "name", dir: "asc" });
 
   useEffect(() => {
     let ignore = false;
@@ -295,15 +300,74 @@ export default function Dashboard() {
   // Pre-compute a view model per visible expense so the desktop table and the
   // mobile cards can share the same data (entries, category info, etc.).
   const expenseRows = useMemo(() => {
+    const rawExpenses = payload?.expenses || [];
     return filteredExpenses.map((expense, idx) => {
-      const entries = Array.isArray(expense.entries) ? expense.entries : [];
-      const sortedEntries = [...entries].sort((a, b) =>
+      // Map back to the raw payload expense so entry edits mutate the real data.
+      const rawIndex = rawExpenses.findIndex((e) => e.name === expense.name);
+      const rawEntries =
+        rawIndex >= 0 && Array.isArray(rawExpenses[rawIndex].entries)
+          ? rawExpenses[rawIndex].entries
+          : [];
+      // Spread keeps element references intact so delete-by-reference works.
+      const sortedEntries = [...rawEntries].sort((a, b) =>
         String(b.date || "").localeCompare(String(a.date || ""))
       );
       const catInfo = categoryMap[expense.category] || { emoji: "📌", color: "#6c757d" };
-      return { expense, idx, rowKey: `${expense.name}-${idx}`, sortedEntries, catInfo };
+      return { expense, idx, rawIndex, rowKey: `${expense.name}-${idx}`, sortedEntries, catInfo };
     });
-  }, [filteredExpenses, categoryMap]);
+  }, [filteredExpenses, categoryMap, payload]);
+
+  // Sorted view of the expense rows (drives both desktop table and mobile cards).
+  // Default: expense name A→Z. Payment entries within each row stay date-desc.
+  const sortedExpenseRows = useMemo(() => {
+    const rows = [...expenseRows];
+    const mult = sortBy.dir === "asc" ? 1 : -1;
+    const childNames = (row) =>
+      (row.expense.children || []).map((c) => resolveChild(c).name).sort().join(", ");
+    rows.sort((a, b) => {
+      if (sortBy.key === "monthly") {
+        return (Number(a.expense.monthlyCost || 0) - Number(b.expense.monthlyCost || 0)) * mult;
+      }
+      let av;
+      let bv;
+      if (sortBy.key === "category") {
+        av = a.expense.category || "";
+        bv = b.expense.category || "";
+      } else if (sortBy.key === "for") {
+        av = childNames(a);
+        bv = childNames(b);
+      } else {
+        av = a.expense.name || "";
+        bv = b.expense.name || "";
+      }
+      return String(av).localeCompare(String(bv)) * mult;
+    });
+    return rows;
+  }, [expenseRows, sortBy, childLookupMap]);
+
+  const toggleSort = (key) =>
+    setSortBy((prev) =>
+      prev.key === key ? { key, dir: prev.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }
+    );
+
+  const sortHeader = (label, key, thClass = "") => {
+    const active = sortBy.key === key;
+    return (
+      <th
+        className={thClass}
+        style={{ cursor: "pointer", userSelect: "none" }}
+        onClick={() => toggleSort(key)}
+        aria-sort={active ? (sortBy.dir === "asc" ? "ascending" : "descending") : "none"}
+      >
+        <span className="d-inline-flex align-items-center gap-1">
+          {label}
+          <span style={{ fontSize: "0.7rem", opacity: active ? 1 : 0.35 }}>
+            {active ? (sortBy.dir === "asc" ? "▲" : "▼") : "↕"}
+          </span>
+        </span>
+      </th>
+    );
+  };
 
   const toggleRow = (key) =>
     setExpandedRows((prev) => {
@@ -332,6 +396,151 @@ export default function Dashboard() {
     });
   };
 
+  const today = () => new Date().toISOString().slice(0, 10);
+
+  // Persist a mutated payload: update local state immediately, then save
+  // (GitHub in live mode, sessionStorage in demo — handled by saveExpenses).
+  const persistPayload = async (nextPayload) => {
+    setPayload(nextPayload);
+    setEntrySaving(true);
+    setEntryError(null);
+    try {
+      const result = await saveExpenses(nextPayload);
+      if (result && result.saved === false) {
+        setEntryError(
+          result.message ||
+            "Saved locally, but not committed to GitHub (server not configured)."
+        );
+      }
+    } catch (err) {
+      setEntryError(err.message || "Could not save payment entry.");
+    } finally {
+      setEntrySaving(false);
+    }
+  };
+
+  const mutateEntries = (rawIndex, updater) => {
+    if (!payload || rawIndex < 0) return;
+    const rawExpenses = payload.expenses || [];
+    const target = rawExpenses[rawIndex];
+    if (!target) return;
+    const nextEntries = updater(Array.isArray(target.entries) ? target.entries : []);
+    const nextExpenses = rawExpenses.map((e, i) =>
+      i === rawIndex ? { ...e, entries: nextEntries } : e
+    );
+    persistPayload({ ...payload, expenses: nextExpenses });
+  };
+
+  const deleteEntry = (rawIndex, entryRef) =>
+    mutateEntries(rawIndex, (entries) => entries.filter((e) => e !== entryRef));
+
+  const openDraft = (rowKey) =>
+    setDrafts((prev) => ({ ...prev, [rowKey]: { date: today(), description: "", amount: "" } }));
+
+  const closeDraft = (rowKey) =>
+    setDrafts((prev) => {
+      const next = { ...prev };
+      delete next[rowKey];
+      return next;
+    });
+
+  const updateDraft = (rowKey, field, value) =>
+    setDrafts((prev) => ({ ...prev, [rowKey]: { ...prev[rowKey], [field]: value } }));
+
+  const draftIsValid = (draft) => {
+    if (!draft) return false;
+    const amount = Number(draft.amount);
+    return Boolean(draft.description.trim()) && Number.isFinite(amount) && amount >= 0;
+  };
+
+  const submitDraft = (rowKey, rawIndex) => {
+    const draft = drafts[rowKey];
+    if (!draftIsValid(draft)) return;
+    const entry = {
+      date: draft.date || today(),
+      description: draft.description.trim(),
+      amount: Number(draft.amount),
+    };
+    mutateEntries(rawIndex, (entries) => [...entries, entry]);
+    closeDraft(rowKey);
+  };
+
+  // Shared "Record payment" inline form used by both desktop and mobile panels.
+  const renderAddForm = (rowKey, rawIndex) => {
+    const draft = drafts[rowKey];
+    if (!draft) return null;
+    return (
+      <div className="border rounded-3 p-2 mt-2 bg-white" onClick={(e) => e.stopPropagation()}>
+        <div className="row g-2">
+          <div className="col-12 col-sm-4">
+            <label className="form-label small text-muted mb-1">Date</label>
+            <input
+              type="date"
+              className="form-control form-control-sm"
+              value={draft.date}
+              onChange={(e) => updateDraft(rowKey, "date", e.target.value)}
+            />
+          </div>
+          <div className="col-12 col-sm-5">
+            <label className="form-label small text-muted mb-1">Description</label>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              placeholder="e.g. July payment"
+              value={draft.description}
+              onChange={(e) => updateDraft(rowKey, "description", e.target.value)}
+            />
+          </div>
+          <div className="col-12 col-sm-3">
+            <label className="form-label small text-muted mb-1">Amount</label>
+            <div className="input-group input-group-sm">
+              <span className="input-group-text">£</span>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                className="form-control"
+                value={draft.amount}
+                onChange={(e) => updateDraft(rowKey, "amount", e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+        <div className="d-flex justify-content-end gap-2 mt-2">
+          <button type="button" className="btn btn-light btn-sm" onClick={() => closeDraft(rowKey)}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            disabled={!draftIsValid(draft) || entrySaving}
+            onClick={() => submitDraft(rowKey, rawIndex)}
+          >
+            {entrySaving ? "Saving…" : "Add payment"}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderRecordButton = (rowKey, className = "") => (
+    <button
+      type="button"
+      className={`btn btn-outline-primary btn-sm d-inline-flex align-items-center justify-content-center gap-1 ${className}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        openDraft(rowKey);
+      }}
+    >
+      <Plus size={15} /> Record payment
+    </button>
+  );
+
+  const renderEntryError = () =>
+    entryError ? (
+      <div className="alert alert-warning py-1 px-2 small mb-0 mt-2">{entryError}</div>
+    ) : null;
+
   const renderViewAll = (rowKey, total) =>
     total > 3 ? (
       <button
@@ -347,29 +556,30 @@ export default function Dashboard() {
     ) : null;
 
   // Desktop: entries rendered as a compact table inside the expanded row.
-  const renderEntriesTable = (rowKey, sortedEntries) => {
+  const renderEntriesTable = (rowKey, rawIndex, sortedEntries) => {
     const showAll = showAllEntries.has(rowKey);
     const visible = showAll ? sortedEntries : sortedEntries.slice(0, 3);
     return (
       <div className="p-3 p-lg-4">
-        <div className="d-flex align-items-center gap-2 mb-3">
-          <span
-            className="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary bg-opacity-10 text-primary flex-shrink-0"
-            style={{ width: "34px", height: "34px" }}
-          >
-            <Receipt size={18} />
-          </span>
-          <div>
-            <h6 className="fw-bold mb-0">Payment entries</h6>
-            <small className="text-muted">
-              A record of payments made. These do not change the estimated monthly cost.
-            </small>
+        <div className="d-flex align-items-start justify-content-between gap-2 mb-3">
+          <div className="d-flex align-items-center gap-2">
+            <span
+              className="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary bg-opacity-10 text-primary flex-shrink-0"
+              style={{ width: "34px", height: "34px" }}
+            >
+              <Receipt size={18} />
+            </span>
+            <div>
+              <h6 className="fw-bold mb-0">Payment entries</h6>
+              <small className="text-muted">
+                A record of payments made. These do not change the estimated monthly cost.
+              </small>
+            </div>
           </div>
+          {!drafts[rowKey] && renderRecordButton(rowKey, "flex-shrink-0")}
         </div>
 
-        {sortedEntries.length === 0 ? (
-          <div className="text-muted small py-2">No payments recorded yet.</div>
-        ) : (
+        {sortedEntries.length > 0 ? (
           <>
             <div className="table-responsive">
               <table className="table table-sm align-middle mb-0 bg-white rounded-3">
@@ -379,6 +589,7 @@ export default function Dashboard() {
                     <th>Description</th>
                     <th className="text-end">Amount</th>
                     <th>Notes</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -388,6 +599,20 @@ export default function Dashboard() {
                       <td>{entry.description || "—"}</td>
                       <td className="text-end fw-semibold">{formatCurrency(entry.amount)}</td>
                       <td className="text-muted">{entry.note || entry.notes || "—"}</td>
+                      <td className="text-end" style={{ width: "40px" }}>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-link text-danger p-0"
+                          aria-label="Delete payment"
+                          disabled={entrySaving}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteEntry(rawIndex, entry);
+                          }}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -395,43 +620,68 @@ export default function Dashboard() {
             </div>
             {renderViewAll(rowKey, sortedEntries.length)}
           </>
+        ) : (
+          !drafts[rowKey] && <div className="text-muted small py-2">No payments recorded yet.</div>
         )}
+
+        {renderAddForm(rowKey, rawIndex)}
+        {renderEntryError()}
       </div>
     );
   };
 
   // Mobile: entries rendered as a light stacked list inside the expanded card.
-  const renderEntriesList = (rowKey, sortedEntries) => {
+  const renderEntriesList = (rowKey, rawIndex, sortedEntries) => {
     const showAll = showAllEntries.has(rowKey);
     const visible = showAll ? sortedEntries : sortedEntries.slice(0, 3);
-    if (sortedEntries.length === 0) {
-      return <div className="text-muted small">No payments recorded yet.</div>;
-    }
     return (
       <div className="d-flex flex-column gap-2">
-        {visible.map((entry, i) => (
-          <div
-            key={i}
-            className="d-flex align-items-center justify-content-between gap-2 bg-light border rounded-3 p-2"
-          >
-            <div className="d-flex align-items-center gap-2 overflow-hidden">
-              <span
-                className="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary bg-opacity-10 text-primary flex-shrink-0"
-                style={{ width: "32px", height: "32px" }}
-              >
-                <Receipt size={15} />
-              </span>
-              <div className="overflow-hidden">
-                <div className="fw-semibold small text-truncate">{formatEntryDate(entry.date)}</div>
-                <div className="text-muted text-truncate" style={{ fontSize: "0.75rem" }}>
-                  {entry.description || "—"}
+        {sortedEntries.length > 0
+          ? (
+            <>
+              {visible.map((entry, i) => (
+                <div
+                  key={i}
+                  className="d-flex align-items-center justify-content-between gap-2 bg-light border rounded-3 p-2"
+                >
+                  <div className="d-flex align-items-center gap-2 overflow-hidden">
+                    <span
+                      className="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary bg-opacity-10 text-primary flex-shrink-0"
+                      style={{ width: "32px", height: "32px" }}
+                    >
+                      <Receipt size={15} />
+                    </span>
+                    <div className="overflow-hidden">
+                      <div className="fw-semibold small text-truncate">{formatEntryDate(entry.date)}</div>
+                      <div className="text-muted text-truncate" style={{ fontSize: "0.75rem" }}>
+                        {entry.description || "—"}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="d-flex align-items-center gap-2 flex-shrink-0">
+                    <span className="fw-bold small text-nowrap">{formatCurrency(entry.amount)}</span>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-link text-danger p-0"
+                      aria-label="Delete payment"
+                      disabled={entrySaving}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteEntry(rawIndex, entry);
+                      }}
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <span className="fw-bold small text-nowrap">{formatCurrency(entry.amount)}</span>
-          </div>
-        ))}
-        {renderViewAll(rowKey, sortedEntries.length)}
+              ))}
+              {renderViewAll(rowKey, sortedEntries.length)}
+            </>
+          )
+          : !drafts[rowKey] && <div className="text-muted small">No payments recorded yet.</div>}
+
+        {drafts[rowKey] ? renderAddForm(rowKey, rawIndex) : renderRecordButton(rowKey, "mt-1")}
+        {renderEntryError()}
       </div>
     );
   };
@@ -739,16 +989,16 @@ export default function Dashboard() {
                 <table className="table align-middle">
                   <thead>
                     <tr className="text-uppercase text-muted border-bottom small" style={{ fontSize: "0.7rem" }}>
-                      <th>Expense ↑</th>
-                      <th>For</th>
-                      <th>Category</th>
-                      <th>Monthly</th>
+                      {sortHeader("Expense", "name")}
+                      {sortHeader("For", "for")}
+                      {sortHeader("Category", "category")}
+                      {sortHeader("Monthly", "monthly")}
                       <th className="text-end">Paid By</th>
                       <th style={{ width: "48px" }}></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {expenseRows.map(({ expense, rowKey, sortedEntries, catInfo }) => {
+                    {sortedExpenseRows.map(({ expense, rowKey, rawIndex, sortedEntries, catInfo }) => {
                       const paymentPills = getIndividualPayments(expense);
                       const isExpanded = expandedRows.has(rowKey);
 
@@ -869,7 +1119,7 @@ export default function Dashboard() {
                           {isExpanded && (
                             <tr>
                               <td colSpan={6} className="p-0 border-0 bg-light">
-                                {renderEntriesTable(rowKey, sortedEntries)}
+                                {renderEntriesTable(rowKey, rawIndex, sortedEntries)}
                               </td>
                             </tr>
                           )}
@@ -882,7 +1132,7 @@ export default function Dashboard() {
 
               {/* MOBILE: expense cards with expandable payment entries (below lg) */}
               <div className="d-lg-none d-flex flex-column gap-3">
-                {expenseRows.map(({ expense, rowKey, sortedEntries, catInfo }) => {
+                {sortedExpenseRows.map(({ expense, rowKey, rawIndex, sortedEntries, catInfo }) => {
                   const paymentPills = getIndividualPayments(expense);
                   const isExpanded = expandedRows.has(rowKey);
                   const entryCount = sortedEntries.length;
@@ -991,7 +1241,7 @@ export default function Dashboard() {
                               }}
                             />
                           </button>
-                          {isExpanded && <div className="pt-2">{renderEntriesList(rowKey, sortedEntries)}</div>}
+                          {isExpanded && <div className="pt-2">{renderEntriesList(rowKey, rawIndex, sortedEntries)}</div>}
                         </div>
                       </div>
                     </div>

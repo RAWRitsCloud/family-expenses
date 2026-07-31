@@ -11,6 +11,12 @@ export default function Categories() {
   const categories = rawData?.categories || [];
   const expenses = rawData?.expenses || [];
 
+  // Display alphabetically while keeping each category's original index so edit
+  // and delete still target the right item in the underlying data.
+  const orderedCategories = categories
+    .map((category, index) => ({ category, index }))
+    .sort((a, b) => (a.category.name || "").localeCompare(b.category.name || ""));
+
   const categoryStats = useMemo(() => {
     const stats = {};
     categories.forEach((cat) => {
@@ -68,7 +74,7 @@ export default function Categories() {
       </div>
 
       <div className="row g-3 mb-4">
-        {categories.map((category, index) => {
+        {orderedCategories.map(({ category, index }) => {
           const stat = categoryStats[category.name] || { count: 0, total: 0 };
 
           return (
