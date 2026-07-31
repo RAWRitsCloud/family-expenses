@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json.schemastore.org/staticwebapp.config.json",
+  "routes": [
+    {
+      "route": "/api/*",
+      "allowedRoles": ["anonymous"],
+      "headers": {
+        "Cache-Control": "no-store"
+      }
+    },
+    {
+      "route": "/data/*",
+      "allowedRoles": ["anonymous"],
+      "headers": {
+        "Cache-Control": "no-store"
+      }
+    },
+    {
+      "route": "/*",
+      "allowedRoles": ["anonymous"]
+    }
+  ],
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": [
+      "/api/*",
+      "/assets/*",
+      "/data/*"
+    ]
+  },
+  "globalHeaders": {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
+  }
+}

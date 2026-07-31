@@ -1,0 +1,408 @@
+{
+  "family": {
+    "children": [
+      {
+        "id": "ava",
+        "name": "Ava",
+        "initial": "A",
+        "color": "#2563eb"
+      },
+      {
+        "id": "noah",
+        "name": "Noah",
+        "initial": "N",
+        "color": "#10b981"
+      },
+      {
+        "id": "mia",
+        "name": "Mia",
+        "initial": "M",
+        "color": "#f59e0b"
+      }
+    ],
+    "payers": [
+      {
+        "id": "jamie",
+        "name": "Jamie",
+        "initial": "J",
+        "color": "#22c7d8"
+      },
+      {
+        "id": "taylor",
+        "name": "Taylor",
+        "initial": "T",
+        "color": "#7c3aed"
+      },
+      {
+        "id": "grandma",
+        "name": "Grandma",
+        "initial": "G",
+        "color": "#fb4b2b"
+      },
+      {
+        "id": "grandpa",
+        "name": "Grandpa",
+        "initial": "N",
+        "color": "#10b981"
+      }
+    ]
+  },
+  "categories": [
+    {
+      "name": "School",
+      "emoji": "🏫",
+      "color": "#2563eb"
+    },
+    {
+      "name": "Clubs",
+      "emoji": "⚽",
+      "color": "#7c3aed"
+    },
+    {
+      "name": "Health",
+      "emoji": "💙",
+      "color": "#0891b2"
+    },
+    {
+      "name": "Phone",
+      "emoji": "📱",
+      "color": "#f59e0b"
+    },
+    {
+      "name": "Entertainment",
+      "emoji": "🎟️",
+      "color": "#10b981"
+    },
+    {
+      "name": "Other",
+      "emoji": "✨",
+      "color": "#e11d48"
+    }
+  ],
+  "expenses": [
+    {
+      "name": "After-school Club",
+      "emoji": "🎨",
+      "children": [
+        "ava"
+      ],
+      "category": "Clubs",
+      "monthlyCost": 42,
+      "paidBy": {
+        "jamie": 22,
+        "taylor": 0,
+        "grandma": 10,
+        "grandpa": 10
+      },
+      "entries": [
+        {
+          "date": "2026-06-12",
+          "description": "Art workshop",
+          "amount": 18
+        },
+        {
+          "date": "2026-05-15",
+          "description": "Holiday craft session",
+          "amount": 24
+        }
+      ]
+    },
+    {
+      "name": "Breakfast Club",
+      "emoji": "🥣",
+      "children": [
+        "ava",
+        "noah"
+      ],
+      "category": "School",
+      "monthlyCost": 64,
+      "paidBy": {
+        "jamie": 32,
+        "taylor": 32,
+        "grandma": 0,
+        "grandpa": 0
+      },
+      "entries": []
+    },
+    {
+      "name": "Cinema Club",
+      "emoji": "🎬",
+      "children": [
+        "mia"
+      ],
+      "category": "Entertainment",
+      "monthlyCost": 18,
+      "paidBy": {
+        "jamie": 0,
+        "taylor": 18,
+        "grandma": 0,
+        "grandpa": 0
+      },
+      "entries": []
+    },
+    {
+      "name": "Dance Class",
+      "emoji": "🩰",
+      "children": [
+        "mia"
+      ],
+      "category": "Clubs",
+      "monthlyCost": 34,
+      "paidBy": {
+        "jamie": 17,
+        "taylor": 0,
+        "grandma": 0,
+        "grandpa": 17
+      },
+      "entries": [
+        {
+          "date": "2026-04-04",
+          "description": "Show costume contribution",
+          "amount": 22
+        }
+      ]
+    },
+    {
+      "name": "Drama Lessons",
+      "emoji": "🎭",
+      "children": [
+        "noah"
+      ],
+      "category": "Entertainment",
+      "monthlyCost": 38.5,
+      "paidBy": {
+        "jamie": 18.5,
+        "taylor": 20,
+        "grandma": 0,
+        "grandpa": 0
+      },
+      "entries": []
+    },
+    {
+      "name": "Football Club",
+      "emoji": "⚽",
+      "children": [
+        "ava"
+      ],
+      "category": "Clubs",
+      "monthlyCost": 24,
+      "paidBy": {
+        "jamie": 24,
+        "taylor": 0,
+        "grandma": 0,
+        "grandpa": 0
+      },
+      "entries": [
+        {
+          "date": "2026-04-20",
+          "description": "Tournament fee",
+          "amount": 12
+        }
+      ]
+    },
+    {
+      "name": "Glasses Plan",
+      "emoji": "👓",
+      "children": [
+        "noah"
+      ],
+      "category": "Health",
+      "monthlyCost": 18.75,
+      "paidBy": {
+        "jamie": 18.75,
+        "taylor": 0,
+        "grandma": 0,
+        "grandpa": 0
+      },
+      "entries": []
+    },
+    {
+      "name": "Haircuts",
+      "emoji": "✂️",
+      "children": [
+        "ava",
+        "noah",
+        "mia"
+      ],
+      "category": "Health",
+      "monthlyCost": 42,
+      "paidBy": {
+        "jamie": 21,
+        "taylor": 21,
+        "grandma": 0,
+        "grandpa": 0
+      },
+      "entries": []
+    },
+    {
+      "name": "Holiday Camp",
+      "emoji": "🏕️",
+      "children": [
+        "ava",
+        "noah"
+      ],
+      "category": "Clubs",
+      "monthlyCost": 55,
+      "paidBy": {
+        "jamie": 25,
+        "taylor": 0,
+        "grandma": 15,
+        "grandpa": 15
+      },
+      "entries": [
+        {
+          "date": "2026-07-01",
+          "description": "Summer camp deposit",
+          "amount": 75
+        },
+        {
+          "date": "2026-07-18",
+          "description": "Activity balance",
+          "amount": 90
+        }
+      ]
+    },
+    {
+      "name": "Maths Tutoring",
+      "emoji": "📚",
+      "children": [
+        "noah"
+      ],
+      "category": "School",
+      "monthlyCost": 120,
+      "paidBy": {
+        "jamie": 60,
+        "taylor": 30,
+        "grandma": 30,
+        "grandpa": 0
+      },
+      "entries": []
+    },
+    {
+      "name": "Mobile Top-up",
+      "emoji": "📱",
+      "children": [
+        "ava"
+      ],
+      "category": "Phone",
+      "monthlyCost": 12,
+      "paidBy": {
+        "jamie": 12,
+        "taylor": 0,
+        "grandma": 0,
+        "grandpa": 0
+      },
+      "entries": []
+    },
+    {
+      "name": "Music Lessons",
+      "emoji": "🎵",
+      "children": [
+        "ava"
+      ],
+      "category": "Entertainment",
+      "monthlyCost": 46,
+      "paidBy": {
+        "jamie": 23,
+        "taylor": 23,
+        "grandma": 0,
+        "grandpa": 0
+      },
+      "entries": []
+    },
+    {
+      "name": "Pocket Money",
+      "emoji": "💷",
+      "children": [
+        "ava",
+        "noah",
+        "mia"
+      ],
+      "category": "Other",
+      "monthlyCost": 30,
+      "paidBy": {
+        "jamie": 20,
+        "taylor": 0,
+        "grandma": 0,
+        "grandpa": 10
+      },
+      "entries": []
+    },
+    {
+      "name": "School Lunches",
+      "emoji": "🍽️",
+      "children": [
+        "mia"
+      ],
+      "category": "School",
+      "monthlyCost": 72,
+      "paidBy": {
+        "jamie": 0,
+        "taylor": 72,
+        "grandma": 0,
+        "grandpa": 0
+      },
+      "entries": []
+    },
+    {
+      "name": "Swimming Lessons",
+      "emoji": "🏊",
+      "children": [
+        "noah"
+      ],
+      "category": "Clubs",
+      "monthlyCost": 36,
+      "paidBy": {
+        "jamie": 16,
+        "taylor": 0,
+        "grandma": 10,
+        "grandpa": 10
+      },
+      "entries": [
+        {
+          "date": "2026-03-09",
+          "description": "Badge assessment",
+          "amount": 6
+        }
+      ]
+    },
+    {
+      "name": "Tablet Insurance",
+      "emoji": "🛡️",
+      "children": [
+        "mia"
+      ],
+      "category": "Other",
+      "monthlyCost": 7.5,
+      "paidBy": {
+        "jamie": 7.5,
+        "taylor": 0,
+        "grandma": 0,
+        "grandpa": 0
+      },
+      "entries": []
+    },
+    {
+      "name": "Train Pass",
+      "emoji": "🚆",
+      "children": [
+        "ava"
+      ],
+      "category": "School",
+      "monthlyCost": 34.25,
+      "paidBy": {
+        "jamie": 34.25,
+        "taylor": 0,
+        "grandma": 0,
+        "grandpa": 0
+      },
+      "entries": [
+        {
+          "date": "2026-09-03",
+          "description": "Autumn term pass",
+          "amount": 137
+        }
+      ]
+    }
+  ]
+}
