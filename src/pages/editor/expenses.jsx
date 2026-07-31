@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { Plus, Trash2, Search, ChevronRight, ArrowLeft, SlidersHorizontal, Calculator } from "lucide-react";
 import { getCategoryData, getFamilyData } from "../../api/expensesApi";
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 
 export default function Expenses() {
+  useDocumentTitle("Expenses");
   // Shared editor state lives in EditorShell so the "Save to GitHub" button
   // persists the edits made here.
   const { payload: rawData, setPayload: setRawData } = useOutletContext();

@@ -1,8 +1,10 @@
 import { useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
 import { Plus, Trash2 } from "lucide-react";
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 
 export default function Categories() {
+  useDocumentTitle("Categories");
   // Shared editor state lives in EditorShell so edits are included when saving.
   const { payload: rawData, setPayload: setRawData } = useOutletContext();
 

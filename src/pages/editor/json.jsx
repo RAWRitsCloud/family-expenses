@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { Sparkles } from "lucide-react";
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 
 export default function JsonEditor() {
+  useDocumentTitle("JSON Editor");
   // Shared editor state lives in EditorShell so JSON edits are included when saving.
   const { payload, setPayload } = useOutletContext();
   const [jsonText, setJsonText] = useState("{}");

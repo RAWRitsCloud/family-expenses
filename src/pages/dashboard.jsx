@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Fragment } from "react";
 import { Link } from "react-router-dom";
-import { PencilRuler, LogOut, } from "lucide-react";
+import { PencilRuler, LogOut, ChevronDown, Receipt } from "lucide-react";
 import {
   getExpenses,
   getFamilyDisplayNames,
@@ -20,6 +20,7 @@ import {
 } from "chart.js";
 import ChartDataLabels from "chartjs-plugin-datalabels";
 import { Bar } from "react-chartjs-2";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
 ChartJS.register(
   CategoryScale,
@@ -87,9 +88,12 @@ function getIndividualPayments(expense) {
 }
 
 export default function Dashboard() {
+  useDocumentTitle("Dashboard");
   const [payload, setPayload] = useState(null);
   const [selectedChild, setSelectedChild] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [expandedRows, setExpandedRows] = useState(() => new Set());
+  const [showAllEntries, setShowAllEntries] = useState(() => new Set());
 
   useEffect(() => {
     let ignore = false;
@@ -286,6 +290,150 @@ export default function Dashboard() {
 
   const handleLogout = () => {
     window.location.href = `/.auth/logout`;
+  };
+
+  // Pre-compute a view model per visible expense so the desktop table and the
+  // mobile cards can share the same data (entries, category info, etc.).
+  const expenseRows = useMemo(() => {
+    return filteredExpenses.map((expense, idx) => {
+      const entries = Array.isArray(expense.entries) ? expense.entries : [];
+      const sortedEntries = [...entries].sort((a, b) =>
+        String(b.date || "").localeCompare(String(a.date || ""))
+      );
+      const catInfo = categoryMap[expense.category] || { emoji: "📌", color: "#6c757d" };
+      return { expense, idx, rowKey: `${expense.name}-${idx}`, sortedEntries, catInfo };
+    });
+  }, [filteredExpenses, categoryMap]);
+
+  const toggleRow = (key) =>
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+
+  const toggleShowAll = (key) =>
+    setShowAllEntries((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+
+  // Parse "YYYY-MM-DD" locally (avoids the UTC off-by-one from new Date(str)).
+  const formatEntryDate = (value) => {
+    if (!value) return "—";
+    const parts = String(value).split("-").map(Number);
+    if (parts.length !== 3 || parts.some(Number.isNaN)) return String(value);
+    const [y, m, d] = parts;
+    return new Date(y, m - 1, d).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const renderViewAll = (rowKey, total) =>
+    total > 3 ? (
+      <button
+        type="button"
+        className="btn btn-link btn-sm px-0 mt-2 text-decoration-none fw-semibold"
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleShowAll(rowKey);
+        }}
+      >
+        {showAllEntries.has(rowKey) ? "Show fewer" : `View all ${total} entries`}
+      </button>
+    ) : null;
+
+  // Desktop: entries rendered as a compact table inside the expanded row.
+  const renderEntriesTable = (rowKey, sortedEntries) => {
+    const showAll = showAllEntries.has(rowKey);
+    const visible = showAll ? sortedEntries : sortedEntries.slice(0, 3);
+    return (
+      <div className="p-3 p-lg-4">
+        <div className="d-flex align-items-center gap-2 mb-3">
+          <span
+            className="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary bg-opacity-10 text-primary flex-shrink-0"
+            style={{ width: "34px", height: "34px" }}
+          >
+            <Receipt size={18} />
+          </span>
+          <div>
+            <h6 className="fw-bold mb-0">Payment entries</h6>
+            <small className="text-muted">
+              A record of payments made. These do not change the estimated monthly cost.
+            </small>
+          </div>
+        </div>
+
+        {sortedEntries.length === 0 ? (
+          <div className="text-muted small py-2">No payments recorded yet.</div>
+        ) : (
+          <>
+            <div className="table-responsive">
+              <table className="table table-sm align-middle mb-0 bg-white rounded-3">
+                <thead>
+                  <tr className="text-uppercase text-muted" style={{ fontSize: "0.7rem" }}>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th className="text-end">Amount</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visible.map((entry, i) => (
+                    <tr key={i}>
+                      <td className="text-nowrap">{formatEntryDate(entry.date)}</td>
+                      <td>{entry.description || "—"}</td>
+                      <td className="text-end fw-semibold">{formatCurrency(entry.amount)}</td>
+                      <td className="text-muted">{entry.note || entry.notes || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {renderViewAll(rowKey, sortedEntries.length)}
+          </>
+        )}
+      </div>
+    );
+  };
+
+  // Mobile: entries rendered as a light stacked list inside the expanded card.
+  const renderEntriesList = (rowKey, sortedEntries) => {
+    const showAll = showAllEntries.has(rowKey);
+    const visible = showAll ? sortedEntries : sortedEntries.slice(0, 3);
+    if (sortedEntries.length === 0) {
+      return <div className="text-muted small">No payments recorded yet.</div>;
+    }
+    return (
+      <div className="d-flex flex-column gap-2">
+        {visible.map((entry, i) => (
+          <div
+            key={i}
+            className="d-flex align-items-center justify-content-between gap-2 bg-light border rounded-3 p-2"
+          >
+            <div className="d-flex align-items-center gap-2 overflow-hidden">
+              <span
+                className="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary bg-opacity-10 text-primary flex-shrink-0"
+                style={{ width: "32px", height: "32px" }}
+              >
+                <Receipt size={15} />
+              </span>
+              <div className="overflow-hidden">
+                <div className="fw-semibold small text-truncate">{formatEntryDate(entry.date)}</div>
+                <div className="text-muted text-truncate" style={{ fontSize: "0.75rem" }}>
+                  {entry.description || "—"}
+                </div>
+              </div>
+            </div>
+            <span className="fw-bold small text-nowrap">{formatCurrency(entry.amount)}</span>
+          </div>
+        ))}
+        {renderViewAll(rowKey, sortedEntries.length)}
+      </div>
+    );
   };
 
   return (
@@ -586,8 +734,8 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Expenses Data Table */}
-              <div className="table-responsive">
+              {/* DESKTOP: expenses table with expandable payment entries (lg and up) */}
+              <div className="table-responsive d-none d-lg-block">
                 <table className="table align-middle">
                   <thead>
                     <tr className="text-uppercase text-muted border-bottom small" style={{ fontSize: "0.7rem" }}>
@@ -596,102 +744,259 @@ export default function Dashboard() {
                       <th>Category</th>
                       <th>Monthly</th>
                       <th className="text-end">Paid By</th>
+                      <th style={{ width: "48px" }}></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredExpenses.map((expense, idx) => {
-                      const catInfo = categoryMap[expense.category] || {
-                        emoji: "📌",
-                        color: "#6c757d",
-                      };
+                    {expenseRows.map(({ expense, rowKey, sortedEntries, catInfo }) => {
                       const paymentPills = getIndividualPayments(expense);
+                      const isExpanded = expandedRows.has(rowKey);
 
                       return (
-                        <tr key={`${expense.name}-${idx}`}>
-                          {/* Name + Emoji */}
-                          <td className="fw-bold text-dark">
-                            <span className="me-2">{expense.emoji || catInfo.emoji || "📦"}</span>
-                            {expense.name}
-                          </td>
+                        <Fragment key={rowKey}>
+                          <tr onClick={() => toggleRow(rowKey)} style={{ cursor: "pointer" }}>
+                            {/* Name + Emoji */}
+                            <td className="fw-bold text-dark">
+                              <span className="me-2">{expense.emoji || catInfo.emoji || "📦"}</span>
+                              {expense.name}
+                            </td>
 
-                          {/* Children Pills */}
-                          <td>
-                            <div className="d-flex gap-1 flex-wrap">
-                              {expense.children && expense.children.length > 0 ? (
-                                expense.children.map((childKey) => {
-                                  const { name: childName, color: cColor } = resolveChild(childKey);
+                            {/* Children Pills */}
+                            <td>
+                              <div className="d-flex gap-1 flex-wrap">
+                                {expense.children && expense.children.length > 0 ? (
+                                  expense.children.map((childKey) => {
+                                    const { name: childName, color: cColor } = resolveChild(childKey);
+
+                                    return (
+                                      <span
+                                        key={childName}
+                                        className="badge rounded-pill fw-semibold px-2 py-1"
+                                        style={{
+                                          backgroundColor: `${cColor}20`,
+                                          color: cColor,
+                                          border: `1px solid ${cColor}40`,
+                                          fontSize: "0.75rem",
+                                        }}
+                                      >
+                                        {childName}
+                                      </span>
+                                    );
+                                  })
+                                ) : (
+                                  <span className="text-muted small">-</span>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Category Badge */}
+                            <td>
+                              <span
+                                className="badge rounded-pill fw-semibold px-2 py-1"
+                                style={{
+                                  backgroundColor: `${catInfo.color}20`,
+                                  color: catInfo.color,
+                                  border: `1px solid ${catInfo.color}40`,
+                                  fontSize: "0.75rem",
+                                }}
+                              >
+                                <span className="me-1">{catInfo.emoji}</span>
+                                {expense.category}
+                              </span>
+                            </td>
+
+                            {/* Cost */}
+                            <td className="fw-semibold text-dark">
+                              {formatCurrency(expense.monthlyCost)}
+                            </td>
+
+                            {/* Paid By Individual Pills */}
+                            <td className="text-end">
+                              <div className="d-flex justify-content-end align-items-center gap-1 flex-wrap">
+                                {paymentPills.map((p, pIdx) => {
+                                  const { name: payeeName, color: pColor } = resolvePayee(p.payee);
 
                                   return (
                                     <span
-                                      key={childName}
-                                      className="badge rounded-pill fw-semibold px-2 py-1"
+                                      key={`${payeeName}-${pIdx}`}
+                                      className="badge rounded-pill px-2 py-1 fw-normal"
                                       style={{
-                                        backgroundColor: `${cColor}20`,
-                                        color: cColor,
-                                        border: `1px solid ${cColor}40`,
+                                        backgroundColor: `${pColor}18`,
+                                        color: pColor,
+                                        border: `1px solid ${pColor}40`,
                                         fontSize: "0.75rem",
                                       }}
                                     >
-                                      {childName}
+                                      <strong className="me-1">{payeeName}</strong>
+                                      {formatCurrency(p.amount)}
                                     </span>
                                   );
-                                })
-                              ) : (
-                                <span className="text-muted small">-</span>
-                              )}
-                            </div>
-                          </td>
+                                })}
+                              </div>
+                            </td>
 
-                          {/* Category Badge */}
-                          <td>
-                            <span
-                              className="badge rounded-pill fw-semibold px-2 py-1"
-                              style={{
-                                backgroundColor: `${catInfo.color}20`,
-                                color: catInfo.color,
-                                border: `1px solid ${catInfo.color}40`,
-                                fontSize: "0.75rem",
-                              }}
-                            >
-                              <span className="me-1">{catInfo.emoji}</span>
-                              {expense.category}
-                            </span>
-                          </td>
-
-                          {/* Cost */}
-                          <td className="fw-semibold text-dark">
-                            {formatCurrency(expense.monthlyCost)}
-                          </td>
-
-                          {/* Paid By Individual Pills */}
-                          <td className="text-end">
-                            <div className="d-flex justify-content-end align-items-center gap-1 flex-wrap">
-                              {paymentPills.map((p, pIdx) => {
-                                const { name: payeeName, color: pColor } = resolvePayee(p.payee);
-
-                                return (
-                                  <span
-                                    key={`${payeeName}-${pIdx}`}
-                                    className="badge rounded-pill px-2 py-1 fw-normal"
-                                    style={{
-                                      backgroundColor: `${pColor}18`,
-                                      color: pColor,
-                                      border: `1px solid ${pColor}40`,
-                                      fontSize: "0.75rem",
-                                    }}
-                                  >
-                                    <strong className="me-1">{payeeName}</strong>
-                                    {formatCurrency(p.amount)}
+                            {/* Expand toggle */}
+                            <td className="text-end">
+                              <div className="d-flex align-items-center justify-content-end gap-2">
+                                {sortedEntries.length > 0 && (
+                                  <span className="badge rounded-pill text-bg-light border text-muted fw-semibold">
+                                    {sortedEntries.length}
                                   </span>
-                                );
-                              })}
-                            </div>
-                          </td>
-                        </tr>
+                                )}
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-light border-0 p-1 d-inline-flex"
+                                  aria-expanded={isExpanded}
+                                  aria-label="Toggle payment entries"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleRow(rowKey);
+                                  }}
+                                >
+                                  <ChevronDown
+                                    size={16}
+                                    className="text-muted"
+                                    style={{
+                                      transition: "transform .15s",
+                                      transform: isExpanded ? "rotate(180deg)" : "none",
+                                    }}
+                                  />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+
+                          {isExpanded && (
+                            <tr>
+                              <td colSpan={6} className="p-0 border-0 bg-light">
+                                {renderEntriesTable(rowKey, sortedEntries)}
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
                       );
                     })}
                   </tbody>
                 </table>
+              </div>
+
+              {/* MOBILE: expense cards with expandable payment entries (below lg) */}
+              <div className="d-lg-none d-flex flex-column gap-3">
+                {expenseRows.map(({ expense, rowKey, sortedEntries, catInfo }) => {
+                  const paymentPills = getIndividualPayments(expense);
+                  const isExpanded = expandedRows.has(rowKey);
+                  const entryCount = sortedEntries.length;
+
+                  return (
+                    <div key={rowKey} className="card border-0 shadow-sm rounded-4">
+                      <div className="card-body p-3">
+                        {/* Header: emoji + name + estimated monthly */}
+                        <div className="d-flex justify-content-between align-items-start gap-2">
+                          <div className="d-flex align-items-center gap-2 overflow-hidden">
+                            <span className="fs-4 flex-shrink-0">
+                              {expense.emoji || catInfo.emoji || "📦"}
+                            </span>
+                            <h5 className="fw-bold mb-0 text-truncate">{expense.name}</h5>
+                          </div>
+                          <div className="text-end flex-shrink-0">
+                            <div className="fw-bold">{formatCurrency(expense.monthlyCost)}</div>
+                            <small className="text-muted lh-1 d-block" style={{ fontSize: "0.7rem" }}>
+                              estimated
+                              <br />
+                              monthly
+                            </small>
+                          </div>
+                        </div>
+
+                        {/* Children + category badges */}
+                        <div className="d-flex flex-wrap gap-1 mt-2">
+                          {(expense.children || []).map((childKey) => {
+                            const { name: childName, color: cColor } = resolveChild(childKey);
+                            return (
+                              <span
+                                key={childName}
+                                className="badge rounded-pill fw-semibold px-2 py-1"
+                                style={{
+                                  backgroundColor: `${cColor}20`,
+                                  color: cColor,
+                                  border: `1px solid ${cColor}40`,
+                                  fontSize: "0.75rem",
+                                }}
+                              >
+                                {childName}
+                              </span>
+                            );
+                          })}
+                          <span
+                            className="badge rounded-pill fw-semibold px-2 py-1"
+                            style={{
+                              backgroundColor: `${catInfo.color}20`,
+                              color: catInfo.color,
+                              border: `1px solid ${catInfo.color}40`,
+                              fontSize: "0.75rem",
+                            }}
+                          >
+                            <span className="me-1">{catInfo.emoji}</span>
+                            {expense.category}
+                          </span>
+                        </div>
+
+                        {/* Paid by */}
+                        {paymentPills.length > 0 && (
+                          <div className="mt-3">
+                            <small className="text-muted d-block mb-1" style={{ fontSize: "0.7rem" }}>
+                              Paid by
+                            </small>
+                            <div className="d-flex flex-wrap gap-2">
+                              {paymentPills.map((p, pIdx) => {
+                                const { name: payeeName, color: pColor } = resolvePayee(p.payee);
+                                return (
+                                  <div key={`${payeeName}-${pIdx}`} className="d-flex align-items-center gap-1">
+                                    <span
+                                      className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
+                                      style={{
+                                        width: "26px",
+                                        height: "26px",
+                                        backgroundColor: pColor,
+                                        fontSize: "0.7rem",
+                                      }}
+                                    >
+                                      {payeeName.charAt(0)}
+                                    </span>
+                                    <span className="small fw-semibold">{formatCurrency(p.amount)}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Payment entries expander */}
+                        <div className="border-top mt-3 pt-1">
+                          <button
+                            type="button"
+                            className="btn btn-link btn-sm text-decoration-none d-flex align-items-center justify-content-between w-100 px-0"
+                            onClick={() => toggleRow(rowKey)}
+                            aria-expanded={isExpanded}
+                          >
+                            <span className="d-flex align-items-center gap-2 fw-semibold">
+                              <Receipt size={16} />
+                              {entryCount} payment {entryCount === 1 ? "entry" : "entries"}
+                            </span>
+                            <ChevronDown
+                              size={16}
+                              style={{
+                                transition: "transform .15s",
+                                transform: isExpanded ? "rotate(180deg)" : "none",
+                              }}
+                            />
+                          </button>
+                          {isExpanded && <div className="pt-2">{renderEntriesList(rowKey, sortedEntries)}</div>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
             </div>
