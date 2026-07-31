@@ -5,7 +5,7 @@
 <h1 align="center">Our Family Money</h1>
 
 <p align="center">
-  A small, GitHub-backed family expense tracker for expected monthly child costs.
+  A small, GitHub-backed tracker for our family's expected monthly child costs — who pays what, split by kid and category.
 </p>
 
 <p align="center">
@@ -16,38 +16,26 @@
   <img src="./public/Dashboard-Screenshot.png" alt="Our Family Money dashboard" width="900">
 </p>
 
-Our Family Money tracks expected monthly family costs, shows who pays what, groups spending by child and category, and keeps an optional log of actual payments under each expense.
+Kids' expenses add up from a bunch of directions — camps, activities, school costs, subscriptions — and they don't split evenly. This started as a way to stop guessing: one dashboard for what we expect to pay each month, who's covering it, and which child it's for, plus a log of what's actually been paid.
 
-There is no database. The source of truth is a single JSON file, so changes are easy to review, back up, and undo.
-
-This public repository is safe to share: the committed `src/data/expenses.json` file contains fake demo data only. A private live deployment points the API at a separate private GitHub repository (or private JSON path) using Azure app settings.
+There's no database. The data is a single JSON file tracked in GitHub, so changes are easy to review, back up, and undo, same as any other commit.
 
 ---
 
 ## What it does
 
-- Shows the monthly total for family expenses and the yearly projection.
-- Splits each cost between the configured payers.
-- Groups expenses by child and by category, with a categories bar chart and a contributor split.
-- Lets you **record and delete payment entries** inline from the dashboard (date, description, amount).
-- **Sortable** dashboard table (Expense / For / Category / Monthly), defaulting to expense name A→Z; a card layout on mobile.
-- An **editor** for expenses, categories, and family, plus a raw **JSON editor** for bulk fixes.
-- Saves approved changes back to **GitHub** in live mode, with an unsaved-changes prompt on exit.
-- Runs as a **public demo** (no sign-in) that keeps edits in the browser session and never touches the repository.
-- Uses **Azure Static Web Apps authentication** for family-only access in live mode.
-- Installable to an iPad/iPhone/desktop home screen as a **PWA**.
+- Monthly total and yearly projection, broken down by child and category, with a chart.
+- Every expense shows who pays what, and how much each contributor covers overall.
+- Record and delete actual payment entries inline, right from the dashboard.
+- Sort and filter the expense table by child, category, name, or cost; a card layout on mobile.
+- An editor for expenses, categories, and family members, plus a raw JSON editor for bulk edits, with an unsaved-changes prompt.
+- A public demo that looks real but never touches the actual data — handy for showing people what it does without exposing our numbers.
+- Sign-in required in live mode (GitHub or Microsoft), restricted to family members.
+- Installable to a phone or desktop home screen as a PWA.
 
----
-
-## Tech stack
-
-- **React 19** + **React Router 7** (single-page app)
-- **Vite** build tooling
-- **Bootstrap 5** for layout/styling
-- **Chart.js** (via `react-chartjs-2`) for the dashboard charts
-- **lucide-react** icons and **emoji-picker-react** for the emoji picker
-- **Azure Static Web Apps** hosting + **Azure Functions** (Node) API for reading/writing the data file
-- **GitHub-backed JSON** as the only data store
+<p align="center">
+  <img src="./public/Dashboard-Screenshot-Mobile.png" alt="Our Family Money dashboard on mobile" width="320">
+</p>
 
 ---
 
@@ -58,28 +46,20 @@ npm install
 npm run dev
 ```
 
-Because live mode relies on Azure Static Web Apps authentication (`/.auth/*`) and the Functions API, a plain `npm run dev` has no auth backend and will redirect to the login screen. Two ways to run locally:
-
-**1. Demo mode (quickest — no auth, bundled data):**
+Live mode needs an auth backend the plain dev server doesn't have, so the fastest way to poke around is **demo mode** with bundled sample data:
 
 ```bash
 # PowerShell
 $env:VITE_APP_MODE="demo"; npm run dev
 ```
 
-or add a `.env.local` file:
+or drop a `.env.local` file in the project root:
 
 ```text
 VITE_APP_MODE=demo
 ```
 
-**2. Full stack with auth + API** — use the [Azure Static Web Apps CLI](https://azure.github.io/static-web-apps-cli/):
-
-```bash
-swa start http://localhost:5173 --run "npm run dev" --api-location api
-```
-
-Other scripts:
+Other handy scripts:
 
 ```bash
 npm run build     # production build to dist/
@@ -87,62 +67,19 @@ npm run preview   # serve the built dist/
 npm run lint      # eslint
 ```
 
----
-
-## Live vs demo mode
-
-The same codebase runs in two modes, decided at deploy time:
-
-| | Live | Demo |
-|---|---|---|
-| Auth | Azure SWA, `family` role required | Open to everyone |
-| Data source | Configured GitHub JSON file (via API) | Bundled `src/data/expenses.json` |
-| Saving | Commits back to GitHub | Kept in `sessionStorage` for the tab/session |
-| SWA config | `staticwebapp.config.live.json` | `staticwebapp.config.demo.json` |
-
-Mode is signalled to the client by `window.FAMILY_EXPENSES_APP_MODE` (written into `dist/assets/runtime-config.js` at deploy time) or the build-time `VITE_APP_MODE` env var. Anything not explicitly `"demo"` is treated as secure **live** mode, and `src/components/ProtectedRoute.jsx` only skips sign-in when demo mode is active.
-
-When `GITHUB_TOKEN`, `GITHUB_OWNER`, or `GITHUB_REPO` is missing on the server:
-
-- `GET /api/expenses` returns the bundled fake demo data.
-- `PUT /api/expenses` validates the edited data and returns success **without** writing to GitHub.
-- The browser keeps demo edits in `sessionStorage`, so the dashboard and editor stay in sync for that session.
-
----
-
-## Deployment
-
-Deployment is via two GitHub Actions workflows to two Azure Static Web Apps:
-
-- `.github/workflows/azure-static-web-apps-polite-mushroom-*.yml` — the **live** app.
-- `.github/workflows/azure-static-web-apps-lively-moss-*.yml` — the public **demo** app.
-
-Both build the Vite app themselves, copy the appropriate `staticwebapp.config.*.json` into `dist/`, write `runtime-config.js` with the mode, then deploy the pre-built `dist` (`skip_app_build: true`, `app_location: dist`).
-
-To enable real GitHub saving on the **live** Static Web App, set these Application settings (Azure Portal → your SWA → Configuration):
-
-| Setting | Required | Default | Notes |
-|---|---|---|---|
-| `GITHUB_TOKEN` | ✅ | — | Token with `contents: read/write` on the data repo |
-| `GITHUB_OWNER` | ✅ | — | Repo owner/org |
-| `GITHUB_REPO` | ✅ | — | Repo holding the JSON data |
-| `GITHUB_BRANCH` | – | `main` | Branch to read/write |
-| `GITHUB_DATA_PATH` | – | `data/expenses.json` | Path to the JSON file in that repo |
-| `DEMO_DATA_PATH` | – | — | Optional override for the local demo fallback file |
-
-Leave these unset on the demo Static Web App so it stays in demo mode.
+Want to run the full stack with real authentication and GitHub saving, or deploy your own copy? See **[DEPLOYMENT.md](./DEPLOYMENT.md)**.
 
 ---
 
 ## Data model
 
-`src/data/expenses.json` is one JSON object with three required top-level sections:
+Everything lives in one JSON file (`src/data/expenses.json` for the bundled demo data), with three sections:
 
-- `family` — the children and payers the app should know about.
-- `categories` — the managed category list, including emoji and chart colour.
-- `expenses` — the monthly costs and any logged payment entries.
+- **`family`** — the children and payers the app knows about.
+- **`categories`** — your category list, each with an emoji and a chart colour.
+- **`expenses`** — the monthly costs themselves, plus any logged payment entries.
 
-Minimal example:
+A minimal example:
 
 ```json
 {
@@ -174,79 +111,17 @@ Minimal example:
 }
 ```
 
-### Family
+Most of the time you'll never touch this JSON directly — the in-app editor handles it. A few things worth knowing:
 
-Children and payers are managed at the top of the file. The app builds the dashboard cards, filters, and editor from these arrays. Use stable lowercase `id`s in expenses, and edit display `name`/`color` here.
-
-### Categories
-
-Categories are managed separately from expenses so their `emoji` and chart `color` stay consistent. If you add a new category name to an expense in raw JSON, also add it to the `categories` list.
-
-### Expenses
-
-Each expense is an expected monthly cost:
-
-- `children` is always an array of child IDs (even for one child).
-- `category` should match a managed category name.
-- `monthlyCost` is the expected monthly average.
-- `paidBy` uses payer IDs as keys; values should add up to `monthlyCost`.
-- `emoji` is the emoji for this specific expense (the category has its own too).
-- `entries` is optional history and does **not** change the monthly average.
-- `endDate` (optional, `YYYY-MM-DD`) is the expected last date this expense applies. Once it passes, the expense is automatically excluded from the dashboard — the table, totals, chart, and payer/child splits — but stays visible (shaded, grouped under "Ended") and editable in the Expenses editor.
-
-### Entries
-
-Entries are real/logged payments under an existing expense — camp balances, term passes, one-off kit payments, etc. Each has a `date` (`YYYY-MM-DD`), a `description`, and an `amount`. On the dashboard, entries are shown newest-first and can be recorded or deleted inline.
-
----
-
-## Dashboard
-
-- Summary cards per child, a **categories bar chart**, and a **contributor split** with percentages.
-- Filter the expense list by child and by category.
-- **Desktop:** a sortable table — click **Expense / For / Category / Monthly** to sort (default: expense name A→Z).
-- **Mobile:** each expense is a card with its badges and payer split.
-- Every expense expands to show its **payment entries**, where you can **Record payment** or delete an entry. Changes save immediately (GitHub in live mode, `sessionStorage` in demo).
-
-<p align="center">
-  <img src="./public/Dashboard-Screenshot-Mobile.png" alt="Our Family Money dashboard on mobile" width="320">
-</p>
-
----
-
-## Editor
-
-The editor has four pages, reached from the dashboard's **Add/Edit** button:
-
-- **Expenses** — select/add/remove an expense; edit name, category, children, monthly cost, emoji (via an emoji picker), and the payer split (with "split evenly" / "X pays all" helpers and a one-off cost calculator that spreads a single payment across a number of months).
-- **Categories** — names, emojis (emoji picker), and chart colours.
-- **Family** — children and payers (name, initial, colour).
-- **JSON editor** — direct bulk edits with formatting and validation.
-
-Lists are shown alphabetically. Editing happens against a shared in-memory copy; the **Save to GitHub** button persists it (live), or stores it for the session (demo). Leaving the editor with unsaved changes shows a styled in-app prompt to save, discard, or keep editing.
-
----
-
-## Authentication
-
-Live mode uses Azure Static Web Apps authentication. Only users with the `family` role can access and save data. The React routes are:
-
-- `/login` — choose GitHub or Microsoft sign-in.
-- `/access-denied` — signed-in accounts without the `family` role.
-
-Logout goes to `/.auth/logout`. Microsoft/GitHub may keep their own session active, so returning may not always require re-entering credentials. Demo mode bypasses all of this.
-
----
-
-## PWA
-
-The app ships a web app manifest (`public/app.webmanifest`), app icons, and Apple touch-icon metadata, so it can be added to an iPad/iPhone/desktop home screen and opened in standalone mode without the browser address bar.
+- `paidBy` values should add up to `monthlyCost`, so splits stay accurate.
+- `entries` is an optional running log of real payments and doesn't affect the monthly average.
+- An optional `endDate` (`YYYY-MM-DD`) retires an expense from the dashboard automatically once it passes, while keeping it visible (shaded, under "Ended") and editable.
 
 ---
 
 ## Design goals
 
-The project aims to stay simple, fast, mobile-friendly, database-free, and easy to review through GitHub history. It answers one question:
+Our Family Money aims to stay simple, fast, mobile-friendly, database-free, and easy to review through GitHub history. It answers one question:
 
 > What are our expected monthly family expenses, and who is paying what?
 
