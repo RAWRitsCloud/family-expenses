@@ -95,7 +95,6 @@ export default function Dashboard() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [expandedRows, setExpandedRows] = useState(() => new Set());
   const [showAllEntries, setShowAllEntries] = useState(() => new Set());
-  const [drafts, setDrafts] = useState({});
   const [entrySaving, setEntrySaving] = useState(false);
   const [entryError, setEntryError] = useState(null);
   const [sortBy, setSortBy] = useState({ key: "name", dir: "asc" });
@@ -447,15 +446,19 @@ export default function Dashboard() {
     }
   };
 
-  // Inline edit: the pencil turns the row into inputs with tick/cross actions.
-  const startEdit = (rawIndex, entry) =>
+  // Inline add/edit: one shared form. `entry: null` means adding a new payment;
+  // otherwise it's editing that specific entry. Only one add/edit is active at a time.
+  const startEdit = (rowKey, rawIndex, entry) =>
     setEditing({
-      entry,
+      rowKey,
       rawIndex,
+      entry,
       date: entry.date || today(),
       description: entry.description || "",
       amount: String(entry.amount ?? ""),
     });
+  const startAdd = (rowKey, rawIndex) =>
+    setEditing({ rowKey, rawIndex, entry: null, date: today(), description: "", amount: "" });
   const cancelEdit = () => setEditing(null);
   const updateEditing = (field, value) => setEditing((prev) => ({ ...prev, [field]: value }));
   const editingValid = (e) =>
@@ -466,113 +469,136 @@ export default function Dashboard() {
   const saveEdit = () => {
     if (!editingValid(editing)) return;
     const { entry, rawIndex } = editing;
-    const updated = {
+    const payloadEntry = {
       date: editing.date || today(),
       description: editing.description.trim(),
       amount: Number(editing.amount),
     };
-    mutateEntries(rawIndex, (entries) => entries.map((e) => (e === entry ? updated : e)));
+    if (entry) {
+      mutateEntries(rawIndex, (entries) => entries.map((e) => (e === entry ? payloadEntry : e)));
+    } else {
+      mutateEntries(rawIndex, (entries) => [...entries, payloadEntry]);
+    }
     setEditing(null);
   };
   const isEditing = (entry) => Boolean(editing) && editing.entry === entry;
+  const isAdding = (rowKey) => Boolean(editing) && editing.entry === null && editing.rowKey === rowKey;
 
-  const openDraft = (rowKey) =>
-    setDrafts((prev) => ({ ...prev, [rowKey]: { date: today(), description: "", amount: "" } }));
-
-  const closeDraft = (rowKey) =>
-    setDrafts((prev) => {
-      const next = { ...prev };
-      delete next[rowKey];
-      return next;
-    });
-
-  const updateDraft = (rowKey, field, value) =>
-    setDrafts((prev) => ({ ...prev, [rowKey]: { ...prev[rowKey], [field]: value } }));
-
-  const draftIsValid = (draft) => {
-    if (!draft) return false;
-    const amount = Number(draft.amount);
-    return Boolean(draft.description.trim()) && Number.isFinite(amount) && amount >= 0;
-  };
-
-  const submitDraft = (rowKey, rawIndex) => {
-    const draft = drafts[rowKey];
-    if (!draftIsValid(draft)) return;
-    const entry = {
-      date: draft.date || today(),
-      description: draft.description.trim(),
-      amount: Number(draft.amount),
-    };
-    mutateEntries(rawIndex, (entries) => [...entries, entry]);
-    closeDraft(rowKey);
-  };
-
-  // Shared "Record payment" inline form used by both desktop and mobile panels.
-  const renderAddForm = (rowKey, rawIndex) => {
-    const draft = drafts[rowKey];
-    if (!draft) return null;
-    return (
-      <div className="border rounded-3 p-2 mt-2 bg-white" onClick={(e) => e.stopPropagation()}>
-        <div className="fw-semibold small mb-2">Record payment</div>
-        <div className="row g-2">
-          <div className="col-12 col-sm-4">
-            <label className="form-label small text-muted mb-1">Date</label>
-            <input
-              type="date"
-              className="form-control form-control-sm"
-              value={draft.date}
-              onChange={(e) => updateDraft(rowKey, "date", e.target.value)}
-            />
-          </div>
-          <div className="col-12 col-sm-5">
-            <label className="form-label small text-muted mb-1">Description</label>
-            <input
-              type="text"
-              className="form-control form-control-sm"
-              placeholder="e.g. July payment"
-              value={draft.description}
-              onChange={(e) => updateDraft(rowKey, "description", e.target.value)}
-            />
-          </div>
-          <div className="col-12 col-sm-3">
-            <label className="form-label small text-muted mb-1">Amount</label>
-            <div className="input-group input-group-sm">
-              <span className="input-group-text">£</span>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                className="form-control"
-                value={draft.amount}
-                onChange={(e) => updateDraft(rowKey, "amount", e.target.value)}
-              />
-            </div>
-          </div>
+  // Desktop: the shared add/edit inputs rendered as a table row.
+  const renderEditableRow = (key) => (
+    <tr key={key} onClick={(e) => e.stopPropagation()}>
+      <td>
+        <input
+          type="date"
+          className="form-control form-control-sm"
+          value={editing.date}
+          onChange={(e) => updateEditing("date", e.target.value)}
+        />
+      </td>
+      <td>
+        <input
+          type="text"
+          className="form-control form-control-sm"
+          placeholder="Description"
+          value={editing.description}
+          onChange={(e) => updateEditing("description", e.target.value)}
+        />
+      </td>
+      <td>
+        <div className="input-group input-group-sm">
+          <span className="input-group-text">£</span>
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            className="form-control"
+            value={editing.amount}
+            onChange={(e) => updateEditing("amount", e.target.value)}
+          />
         </div>
-        <div className="d-flex justify-content-end gap-2 mt-2">
-          <button type="button" className="btn btn-light btn-sm" onClick={() => closeDraft(rowKey)}>
-            Cancel
+      </td>
+      <td className="text-end">
+        <div className="d-flex justify-content-end gap-1">
+          <button
+            type="button"
+            className="btn btn-sm btn-success p-1 lh-1 d-inline-flex"
+            aria-label="Save payment"
+            disabled={!editingValid(editing) || entrySaving}
+            onClick={saveEdit}
+          >
+            <Check size={15} />
           </button>
           <button
             type="button"
-            className="btn btn-primary btn-sm"
-            disabled={!draftIsValid(draft) || entrySaving}
-            onClick={() => submitDraft(rowKey, rawIndex)}
+            className="btn btn-sm btn-light border p-1 lh-1 d-inline-flex"
+            aria-label="Cancel"
+            onClick={cancelEdit}
           >
-            {entrySaving ? "Saving…" : "Add payment"}
+            <X size={15} />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+
+  // Mobile: the shared add/edit inputs rendered as a card.
+  const renderEditableCard = (key) => (
+    <div key={key} className="bg-light border rounded-3 p-2" onClick={(e) => e.stopPropagation()}>
+      <div className="d-flex flex-column gap-2">
+        <input
+          type="date"
+          className="form-control form-control-sm"
+          value={editing.date}
+          onChange={(e) => updateEditing("date", e.target.value)}
+        />
+        <input
+          type="text"
+          className="form-control form-control-sm"
+          placeholder="Description"
+          value={editing.description}
+          onChange={(e) => updateEditing("description", e.target.value)}
+        />
+        <div className="input-group input-group-sm">
+          <span className="input-group-text">£</span>
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            className="form-control"
+            value={editing.amount}
+            onChange={(e) => updateEditing("amount", e.target.value)}
+          />
+        </div>
+        <div className="d-flex justify-content-end gap-2">
+          <button
+            type="button"
+            className="btn btn-sm btn-light border d-inline-flex align-items-center gap-1"
+            aria-label="Cancel"
+            onClick={cancelEdit}
+          >
+            <X size={15} /> Cancel
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-success d-inline-flex align-items-center gap-1"
+            aria-label="Save payment"
+            disabled={!editingValid(editing) || entrySaving}
+            onClick={saveEdit}
+          >
+            <Check size={15} /> {entrySaving ? "Saving…" : "Save"}
           </button>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
 
-  const renderRecordButton = (rowKey, className = "") => (
+  const renderRecordButton = (rowKey, rawIndex, className = "") => (
     <button
       type="button"
       className={`btn btn-outline-primary btn-sm d-inline-flex align-items-center justify-content-center gap-1 ${className}`}
       onClick={(e) => {
         e.stopPropagation();
-        openDraft(rowKey);
+        startAdd(rowKey, rawIndex);
       }}
     >
       <Plus size={15} /> Record payment
@@ -619,10 +645,10 @@ export default function Dashboard() {
               </small>
             </div>
           </div>
-          {!drafts[rowKey] && renderRecordButton(rowKey, "flex-shrink-0")}
+          {!isAdding(rowKey) && renderRecordButton(rowKey, rawIndex, "flex-shrink-0")}
         </div>
 
-        {sortedEntries.length > 0 ? (
+        {sortedEntries.length > 0 || isAdding(rowKey) ? (
           <>
             <div className="table-responsive">
               <table className="table table-sm align-middle mb-0 bg-white rounded-3">
@@ -635,60 +661,10 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
+                  {isAdding(rowKey) && renderEditableRow("new")}
                   {visible.map((entry, i) =>
                     isEditing(entry) ? (
-                      <tr key={i} onClick={(e) => e.stopPropagation()}>
-                        <td>
-                          <input
-                            type="date"
-                            className="form-control form-control-sm"
-                            value={editing.date}
-                            onChange={(e) => updateEditing("date", e.target.value)}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="text"
-                            className="form-control form-control-sm"
-                            value={editing.description}
-                            onChange={(e) => updateEditing("description", e.target.value)}
-                          />
-                        </td>
-                        <td>
-                          <div className="input-group input-group-sm">
-                            <span className="input-group-text">£</span>
-                            <input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              className="form-control"
-                              value={editing.amount}
-                              onChange={(e) => updateEditing("amount", e.target.value)}
-                            />
-                          </div>
-                        </td>
-                        <td className="text-end">
-                          <div className="d-flex justify-content-end gap-1">
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-success p-1 lh-1 d-inline-flex"
-                              aria-label="Save changes"
-                              disabled={!editingValid(editing) || entrySaving}
-                              onClick={saveEdit}
-                            >
-                              <Check size={15} />
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-light border p-1 lh-1 d-inline-flex"
-                              aria-label="Cancel edit"
-                              onClick={cancelEdit}
-                            >
-                              <X size={15} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
+                      renderEditableRow(i)
                     ) : (
                       <tr key={i}>
                         <td className="text-nowrap">{formatEntryDate(entry.date)}</td>
@@ -703,7 +679,7 @@ export default function Dashboard() {
                               disabled={entrySaving}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                startEdit(rawIndex, entry);
+                                startEdit(rowKey, rawIndex, entry);
                               }}
                             >
                               <Pencil size={15} />
@@ -747,10 +723,9 @@ export default function Dashboard() {
             {renderViewAll(rowKey, sortedEntries.length)}
           </>
         ) : (
-          !drafts[rowKey] && <div className="text-muted small py-2">No payments recorded yet.</div>
+          <div className="text-muted small py-2">No payments recorded yet.</div>
         )}
 
-        {renderAddForm(rowKey, rawIndex)}
         {renderEntryError()}
       </div>
     );
@@ -762,62 +737,13 @@ export default function Dashboard() {
     const visible = showAll ? sortedEntries : sortedEntries.slice(0, 3);
     return (
       <div className="d-flex flex-column gap-2">
+        {isAdding(rowKey) && renderEditableCard("new")}
         {sortedEntries.length > 0
           ? (
             <>
               {visible.map((entry, i) =>
                 isEditing(entry) ? (
-                  <div
-                    key={i}
-                    className="bg-light border rounded-3 p-2"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="d-flex flex-column gap-2">
-                      <input
-                        type="date"
-                        className="form-control form-control-sm"
-                        value={editing.date}
-                        onChange={(e) => updateEditing("date", e.target.value)}
-                      />
-                      <input
-                        type="text"
-                        className="form-control form-control-sm"
-                        placeholder="Description"
-                        value={editing.description}
-                        onChange={(e) => updateEditing("description", e.target.value)}
-                      />
-                      <div className="input-group input-group-sm">
-                        <span className="input-group-text">£</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          className="form-control"
-                          value={editing.amount}
-                          onChange={(e) => updateEditing("amount", e.target.value)}
-                        />
-                      </div>
-                      <div className="d-flex justify-content-end gap-2">
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-light border d-inline-flex align-items-center gap-1"
-                          aria-label="Cancel edit"
-                          onClick={cancelEdit}
-                        >
-                          <X size={15} /> Cancel
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-success d-inline-flex align-items-center gap-1"
-                          aria-label="Save changes"
-                          disabled={!editingValid(editing) || entrySaving}
-                          onClick={saveEdit}
-                        >
-                          <Check size={15} /> Save
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                  renderEditableCard(i)
                 ) : (
                   <div
                     key={i}
@@ -846,7 +772,7 @@ export default function Dashboard() {
                         disabled={entrySaving}
                         onClick={(e) => {
                           e.stopPropagation();
-                          startEdit(rawIndex, entry);
+                          startEdit(rowKey, rawIndex, entry);
                         }}
                       >
                         <Pencil size={15} />
@@ -886,9 +812,9 @@ export default function Dashboard() {
               {renderViewAll(rowKey, sortedEntries.length)}
             </>
           )
-          : !drafts[rowKey] && <div className="text-muted small">No payments recorded yet.</div>}
+          : !isAdding(rowKey) && <div className="text-muted small">No payments recorded yet.</div>}
 
-        {drafts[rowKey] ? renderAddForm(rowKey, rawIndex) : renderRecordButton(rowKey, "mt-1")}
+        {!isAdding(rowKey) && renderRecordButton(rowKey, rawIndex, "mt-1")}
         {renderEntryError()}
       </div>
     );
