@@ -12,6 +12,10 @@
   <a href="https://expenses-demo.rawritscloud.com"><strong>View the demo →</strong></a>
 </p>
 
+<p align="center">
+  <img src="./public/Dashboard-Screenshot.png" alt="Our Family Money dashboard" width="900">
+</p>
+
 Our Family Money tracks expected monthly family costs, shows who pays what, groups spending by child and category, and keeps an optional log of actual payments under each expense.
 
 There is no database. The source of truth is a single JSON file, so changes are easy to review, back up, and undo.
@@ -31,6 +35,7 @@ This public repository is safe to share: the committed `src/data/expenses.json` 
 - Saves approved changes back to **GitHub** in live mode, with an unsaved-changes prompt on exit.
 - Runs as a **public demo** (no sign-in) that keeps edits in the browser session and never touches the repository.
 - Uses **Azure Static Web Apps authentication** for family-only access in live mode.
+- Installable to an iPad/iPhone/desktop home screen as a **PWA**.
 
 ---
 
@@ -40,7 +45,7 @@ This public repository is safe to share: the committed `src/data/expenses.json` 
 - **Vite** build tooling
 - **Bootstrap 5** for layout/styling
 - **Chart.js** (via `react-chartjs-2`) for the dashboard charts
-- **lucide-react** icons
+- **lucide-react** icons and **emoji-picker-react** for the emoji picker
 - **Azure Static Web Apps** hosting + **Azure Functions** (Node) API for reading/writing the data file
 - **GitHub-backed JSON** as the only data store
 
@@ -202,14 +207,18 @@ Entries are real/logged payments under an existing expense — camp balances, te
 - **Mobile:** each expense is a card with its badges and payer split.
 - Every expense expands to show its **payment entries**, where you can **Record payment** or delete an entry. Changes save immediately (GitHub in live mode, `sessionStorage` in demo).
 
+<p align="center">
+  <img src="./public/Dashboard-Screenshot-Mobile.png" alt="Our Family Money dashboard on mobile" width="320">
+</p>
+
 ---
 
 ## Editor
 
 The editor has four pages, reached from the dashboard's **Add/Edit** button:
 
-- **Expenses** — select/add/remove an expense; edit name, category, children, monthly cost, emoji, and the payer split (with "split evenly" / "X pays all" helpers and a one-off cost calculator that spreads a single payment across a number of months).
-- **Categories** — names, emojis, and chart colours.
+- **Expenses** — select/add/remove an expense; edit name, category, children, monthly cost, emoji (via an emoji picker), and the payer split (with "split evenly" / "X pays all" helpers and a one-off cost calculator that spreads a single payment across a number of months).
+- **Categories** — names, emojis (emoji picker), and chart colours.
 - **Family** — children and payers (name, initial, colour).
 - **JSON editor** — direct bulk edits with formatting and validation.
 
@@ -228,6 +237,12 @@ Logout goes to `/.auth/logout`. Microsoft/GitHub may keep their own session acti
 
 ---
 
+## PWA
+
+The app ships a web app manifest (`public/app.webmanifest`), app icons, and Apple touch-icon metadata, so it can be added to an iPad/iPhone/desktop home screen and opened in standalone mode without the browser address bar.
+
+---
+
 ## Design goals
 
 The project aims to stay simple, fast, mobile-friendly, database-free, and easy to review through GitHub history. It answers one question:
@@ -240,4 +255,4 @@ It is not trying to become a full budgeting app.
 
 ## License
 
-Released under the MIT License.
+Released under the [MIT License](./LICENSE).

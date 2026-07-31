@@ -41,7 +41,7 @@ export default function Family() {
 
   const updateChildInitial = (index, newInitial) => {
     const updatedChildren = [...family.children];
-    updatedChildren[index] = { ...updatedChildren[index], initial: newInitial.toUpperCase() };
+    updatedChildren[index] = { ...updatedChildren[index], initial: newInitial };
     setRawData({
       ...rawData,
       family: { ...family, children: updatedChildren },
@@ -96,7 +96,7 @@ export default function Family() {
 
   const updatePayerInitial = (index, newInitial) => {
     const updatedPayers = [...family.payers];
-    updatedPayers[index] = { ...updatedPayers[index], initial: newInitial.toUpperCase() };
+    updatedPayers[index] = { ...updatedPayers[index], initial: newInitial };
     setRawData({
       ...rawData,
       family: { ...family, payers: updatedPayers },

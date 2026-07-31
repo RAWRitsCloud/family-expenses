@@ -3,6 +3,7 @@ import { useOutletContext } from "react-router-dom";
 import { Plus, Trash2, Search, ChevronRight, ArrowLeft, SlidersHorizontal, Calculator } from "lucide-react";
 import { getCategoryData, getFamilyData } from "../../api/expensesApi";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+import EmojiField from "../../components/EmojiField";
 
 export default function Expenses() {
   useDocumentTitle("Expenses");
@@ -316,12 +317,12 @@ export default function Expenses() {
                       </select>
                     </div>
                     <div className="col-12 col-md-2">
-                      <label className="form-label small fw-semibold text-muted">Icon</label>
-                      <input
-                        type="text"
-                        className="form-control form-control-sm text-center bg-white"
+                      <label className="form-label small fw-semibold text-muted d-block">Icon</label>
+                      <EmojiField
                         value={activeExpense.emoji || "📦"}
-                        onChange={(e) => updateActiveExpense("emoji", e.target.value)}
+                        onSelect={(emoji) => updateActiveExpense("emoji", emoji)}
+                        size={38}
+                        ariaLabel="Choose expense icon"
                       />
                     </div>
                   </div>

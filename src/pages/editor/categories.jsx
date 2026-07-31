@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
 import { Plus, Trash2 } from "lucide-react";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+import EmojiField from "../../components/EmojiField";
 
 export default function Categories() {
   useDocumentTitle("Categories");
@@ -82,12 +83,11 @@ export default function Categories() {
               <div className="card border-0 shadow-sm rounded-4 overflow-hidden bg-white h-100">
                 <div className="card-body p-3 d-flex flex-column justify-content-between">
                   <div className="d-flex align-items-center gap-2 mb-3">
-                    <input
-                      type="text"
-                      className="form-control form-control-sm text-center bg-light flex-shrink-0"
-                      style={{ width: "48px" }}
+                    <EmojiField
                       value={category.emoji || "📌"}
-                      onChange={(e) => updateCategory(index, "emoji", e.target.value)}
+                      onSelect={(emoji) => updateCategory(index, "emoji", emoji)}
+                      size={40}
+                      ariaLabel="Choose category emoji"
                     />
                     <input
                       type="text"
