@@ -334,7 +334,7 @@ export default function Expenses() {
                   <p className="text-muted small mb-3" style={{ fontSize: "0.75rem" }}>Basic information about this expense.</p>
                   
                   <div className="row g-3">
-                    <div className="col-12 col-md-6">
+                    <div className="col-12 col-md-8">
                       <label className="form-label small fw-semibold text-muted">Expense name</label>
                       <input
                         type="text"
@@ -344,18 +344,6 @@ export default function Expenses() {
                       />
                     </div>
                     <div className="col-12 col-md-4">
-                      <label className="form-label small fw-semibold text-muted">Category</label>
-                      <select
-                        className="form-select form-select-sm bg-white"
-                        value={activeExpense.category || ""}
-                        onChange={(e) => updateActiveExpense("category", e.target.value)}
-                      >
-                        {categories.map((c) => (
-                          <option key={c.name} value={c.name}>{c.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="col-12 col-md-2">
                       <label className="form-label small fw-semibold text-muted d-block">Icon</label>
                       <EmojiField
                         value={activeExpense.emoji || "📦"}
@@ -363,6 +351,33 @@ export default function Expenses() {
                         size={38}
                         ariaLabel="Choose expense icon"
                       />
+                    </div>
+                    <div className="col-12">
+                      <label className="form-label small fw-semibold text-muted d-block">Category</label>
+                      <div className="d-flex flex-wrap gap-2">
+                        {categories.map((cat) => {
+                          const isSelected = activeExpense.category === cat.name;
+                          const catColor = cat.color || "#4f46e5";
+                          return (
+                            <button
+                              key={cat.name}
+                              type="button"
+                              onClick={() => updateActiveExpense("category", cat.name)}
+                              aria-pressed={isSelected}
+                              className="btn fw-semibold px-3 py-2 d-inline-flex align-items-center gap-2"
+                              style={{
+                                backgroundColor: isSelected ? catColor : "transparent",
+                                borderColor: catColor,
+                                borderWidth: "2px",
+                                color: isSelected ? "#fff" : catColor,
+                              }}
+                            >
+                              <span>{cat.emoji || "📌"}</span>
+                              <span>{cat.name}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 </div>
