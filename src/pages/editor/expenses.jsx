@@ -514,16 +514,19 @@ export default function Expenses() {
 
                 {/* Contributors Breakdown */}
                 <div className="bg-light p-3 rounded-4 border">
-                  <div className="d-flex justify-content-between align-items-center mb-1">
+                  <div className="d-flex flex-wrap justify-content-between align-items-start gap-1 mb-1">
                     <div className="d-flex align-items-center gap-2">
                       <span className="text-secondary">👥</span>
                       <h6 className="fw-bold small text-dark mb-0">Contributors</h6>
                     </div>
                     <small className="fw-bold text-muted text-end" style={{ fontSize: "0.75rem" }}>
-                      Total: £{Number(activeExpense.monthlyCost || 0).toFixed(2)}/month
+                      <span className="d-block">
+                        Total: £{Number(activeExpense.monthlyCost || 0).toFixed(2)}/month
+                      </span>
                       {Math.abs(remainingToSplit) > 0.004 && (
-                        <span className={remainingToSplit > 0 ? "text-warning" : "text-danger"}>
-                          {" "}
+                        <span
+                          className={`d-block ${remainingToSplit > 0 ? "text-warning" : "text-danger"}`}
+                        >
                           ({remainingToSplit > 0
                             ? `£${remainingToSplit.toFixed(2)} remaining`
                             : `£${Math.abs(remainingToSplit).toFixed(2)} over`})
