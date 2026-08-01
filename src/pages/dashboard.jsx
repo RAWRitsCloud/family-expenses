@@ -23,6 +23,7 @@ import {
 import ChartDataLabels from "chartjs-plugin-datalabels";
 import { Bar } from "react-chartjs-2";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 ChartJS.register(
   CategoryScale,
@@ -92,6 +93,7 @@ function getIndividualPayments(expense) {
 export default function Dashboard() {
   useDocumentTitle("Dashboard");
   const [payload, setPayload] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [selectedChild, setSelectedChild] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [expandedRows, setExpandedRows] = useState(() => new Set());
@@ -112,6 +114,8 @@ export default function Dashboard() {
         if (!ignore) setPayload(data);
       } catch {
         if (!ignore) setPayload(null);
+      } finally {
+        if (!ignore) setLoading(false);
       }
     }
 
@@ -864,14 +868,22 @@ export default function Dashboard() {
             <div className="card text-dark mb-3 d-none d-lg-block">
               <div className="card-body p-3">
                 <h5 className="card-subtitle mb-2 text-body-secondary small">Monthly</h5>
-                <h1 className="card-title fs-2 mb-1">{formatCurrency(totalMonthlyCost)}</h1>
-                <h6 className="card-subtitle text-body-secondary small">{formatCurrency(totalYearlyCost)} per year</h6>
+                {loading ? (
+                  <div className="spinner-border spinner-border-sm text-primary" role="status">
+                    <span className="visually-hidden">Loading…</span>
+                  </div>
+                ) : (
+                  <>
+                    <h1 className="card-title fs-2 mb-1">{formatCurrency(totalMonthlyCost)}</h1>
+                    <h6 className="card-subtitle text-body-secondary small">{formatCurrency(totalYearlyCost)} per year</h6>
+                  </>
+                )}
               </div>
             </div>
 
             {/* Kids Cards - Desktop Sidebar Only */}
             <div className="row g-2 g-lg-3 d-none d-lg-flex">
-              {childTotals.map((child) => {
+              {!loading && childTotals.map((child) => {
                 const { name: displayName, color: childColor } = resolveChild(child.name || child.childId);
 
                 return (
@@ -928,6 +940,10 @@ export default function Dashboard() {
             </button>
           </div>
 
+          {loading ? (
+            <LoadingSpinner label="Loading your expenses…" />
+          ) : (
+          <>
           {/* MOBILE ONLY: KIDS SUMMARY CARDS ABOVE CATEGORIES GRAPH */}
           <div className="d-lg-none mb-4">
             <h6 className="text-uppercase fw-bold text-muted mb-2" style={{ fontSize: "0.75rem" }}>
@@ -1392,6 +1408,8 @@ export default function Dashboard() {
 
             </div>
           </div>
+          </>
+          )}
 
         </main>
       </div>
