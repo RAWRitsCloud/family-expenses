@@ -833,7 +833,7 @@ export default function Dashboard() {
 
   return (
     <div className="container-fluid bg-light min-vh-100">
-      <div className="row min-vh-100">
+      <div className="row min-vh-100 align-content-start align-content-lg-stretch">
 
         {/* SIDEBAR / TOP NAVIGATION */}
         <aside className="col-lg-3 col-xl-2 bg-dark text-white p-3 d-flex flex-column justify-content-between">
