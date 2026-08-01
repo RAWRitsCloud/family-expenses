@@ -11,11 +11,13 @@ import {
   LogOut
 } from "lucide-react";
 import { getExpenses, getFamilyDisplayNames, saveExpenses } from "../api/expensesApi";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 export default function EditorShell() {
   const location = useLocation();
   const navigate = useNavigate();
   const [payload, setPayload] = useState(location.state?.payload || null);
+  const [loading, setLoading] = useState(!location.state?.payload);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [lastSaved, setLastSaved] = useState(null);
@@ -40,6 +42,8 @@ export default function EditorShell() {
           rememberSnapshot(data);
         } catch {
           setPayload(null);
+        } finally {
+          setLoading(false);
         }
       }
       loadPayload();
@@ -311,7 +315,11 @@ export default function EditorShell() {
               <button type="button" className="btn-close" aria-label="Dismiss" onClick={() => setSaveError(null)} />
             </div>
           )}
-          <Outlet context={{ payload, setPayload }} />
+          {loading ? (
+            <LoadingSpinner />
+          ) : (
+            <Outlet context={{ payload, setPayload }} />
+          )}
         </main>
 
       </div>

@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/auth';
 import { isDemoMode } from '../config/appMode';
+import LoadingSpinner from './LoadingSpinner';
 
 export const ProtectedRoute = () => {
   const { user, loading } = useAuth();
@@ -12,11 +13,7 @@ export const ProtectedRoute = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <p className="text-gray-600">Checking permissions...</p>
-      </div>
-    );
+    return <LoadingSpinner fullScreen />;
   }
 
   // If not logged in, go to login

@@ -1,9 +1,32 @@
 import { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import { Plus, Trash2, Search, ChevronRight, ArrowLeft, SlidersHorizontal, Calculator } from "lucide-react";
+import { Plus, Trash2, Search, ChevronRight, ChevronDown, ArrowLeft, SlidersHorizontal, Calculator } from "lucide-react";
 import { getCategoryData, getFamilyData, isExpenseActive } from "../../api/expensesApi";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 import EmojiField from "../../components/EmojiField";
+
+// Given a "YYYY-MM-DD" start date and a number of months, returns the last
+// day the spread payment covers (months later, minus a day) as "YYYY-MM-DD".
+function addMonthsToEndDate(dateStr, months) {
+  const [y, m, d] = String(dateStr || "").split("-").map(Number);
+  if (!y || !m || !d) return "";
+  const end = new Date(y, m - 1 + months, d);
+  end.setDate(end.getDate() - 1);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}`;
+}
+
+// Parses "YYYY-MM-DD" locally (avoids the UTC off-by-one from new Date(str)).
+function formatDisplayDate(value) {
+  if (!value) return "";
+  const [y, m, d] = String(value).split("-").map(Number);
+  if (!y || !m || !d) return value;
+  return new Date(y, m - 1, d).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
 
 export default function Expenses() {
   useDocumentTitle("Expenses");
@@ -18,6 +41,7 @@ export default function Expenses() {
   const [showCalculator, setShowCalculator] = useState(false);
   const [calcAmount, setCalcAmount] = useState("");
   const [calcMonths, setCalcMonths] = useState(1);
+  const [calcDate, setCalcDate] = useState(() => new Date().toISOString().slice(0, 10));
 
   const categories = useMemo(() => getCategoryData(rawData || {}), [rawData]);
   const family = useMemo(() => getFamilyData(rawData || {}), [rawData]);
@@ -48,6 +72,14 @@ export default function Expenses() {
   }, [expenses, selectedIndex]);
 
   const activeExpense = selectedIndex !== null && expenses[selectedIndex] ? expenses[selectedIndex] : expenses[0];
+
+  // How much of the monthly cost is still unassigned across contributors —
+  // surfaced next to the total so it's obvious the split doesn't add up yet.
+  const totalPaid = Object.values(activeExpense?.paidBy || {}).reduce(
+    (sum, amount) => sum + Number(amount || 0),
+    0
+  );
+  const remainingToSplit = Number(activeExpense?.monthlyCost || 0) - totalPaid;
 
   const handleSelectExpense = (index) => {
     setSelectedIndex(index);
@@ -145,8 +177,39 @@ export default function Expenses() {
     return Number((amt / m).toFixed(2));
   }, [calcAmount, calcMonths]);
 
+  // The last day the spread payment covers, starting from the payment date —
+  // used to auto-fill the expense's expected end date when applied.
+  const calculatedEndDate = useMemo(
+    () => addMonthsToEndDate(calcDate, parseInt(calcMonths, 10) || 1),
+    [calcDate, calcMonths]
+  );
+
+  // Applies the calculated split as the ongoing monthly cost, sets the
+  // expected end date to when that split has fully covered the payment, and
+  // logs the actual lump sum paid as a payment entry so there's a record of it.
   const handleApplyCalculatedCost = () => {
-    updateActiveExpense("monthlyCost", calculatedMonthlySplit);
+    if (selectedIndex === null || !activeExpense) return;
+    const oneOffAmount = parseFloat(calcAmount) || 0;
+    const months = parseInt(calcMonths, 10) || 1;
+    const currentEntries = Array.isArray(activeExpense.entries) ? activeExpense.entries : [];
+    const updatedExpenses = [...expenses];
+    updatedExpenses[selectedIndex] = {
+      ...updatedExpenses[selectedIndex],
+      monthlyCost: calculatedMonthlySplit,
+      endDate: calculatedEndDate || updatedExpenses[selectedIndex].endDate,
+      entries: [
+        ...currentEntries,
+        {
+          date: calcDate,
+          description: `One-off payment (spread over ${months} month${months === 1 ? "" : "s"})`,
+          amount: oneOffAmount,
+        },
+      ],
+    };
+    setRawData({ ...rawData, expenses: updatedExpenses });
+    setCalcAmount("");
+    setCalcMonths(1);
+    setCalcDate(new Date().toISOString().slice(0, 10));
     setShowCalculator(false);
   };
 
@@ -351,7 +414,7 @@ export default function Expenses() {
                         onChange={(e) => updateActiveExpense("category", e.target.value)}
                       >
                         {categories.map((c) => (
-                          <option key={c.name} value={c.name}>{c.name}</option>
+                          <option key={c.name} value={c.name}>{c.emoji || "📌"} {c.name}</option>
                         ))}
                       </select>
                     </div>
@@ -451,13 +514,24 @@ export default function Expenses() {
 
                 {/* Contributors Breakdown */}
                 <div className="bg-light p-3 rounded-4 border">
-                  <div className="d-flex justify-content-between align-items-center mb-1">
+                  <div className="d-flex flex-wrap justify-content-between align-items-start gap-1 mb-1">
                     <div className="d-flex align-items-center gap-2">
                       <span className="text-secondary">👥</span>
                       <h6 className="fw-bold small text-dark mb-0">Contributors</h6>
                     </div>
-                    <small className="fw-bold text-muted" style={{ fontSize: "0.75rem" }}>
-                      Total: £{Number(activeExpense.monthlyCost || 0).toFixed(2)}/month
+                    <small className="fw-bold text-muted text-end" style={{ fontSize: "0.75rem" }}>
+                      <span className="d-block">
+                        Total: £{Number(activeExpense.monthlyCost || 0).toFixed(2)}/month
+                      </span>
+                      {Math.abs(remainingToSplit) > 0.004 && (
+                        <span
+                          className={`d-block ${remainingToSplit > 0 ? "text-warning" : "text-danger"}`}
+                        >
+                          ({remainingToSplit > 0
+                            ? `£${remainingToSplit.toFixed(2)} remaining`
+                            : `£${Math.abs(remainingToSplit).toFixed(2)} over`})
+                        </span>
+                      )}
                     </small>
                   </div>
                   <p className="text-muted small mb-3" style={{ fontSize: "0.75rem" }}>How is this paid between you?</p>
@@ -538,36 +612,37 @@ export default function Expenses() {
                   </div>
                 </div>
 
-                {/* Advanced / Single Payment Calculator Section */}
+                {/* Single Payment Calculator Section */}
                 <div className="bg-light p-3 rounded-4 border">
-                  <div className="d-flex align-items-center justify-content-between">
+                  <button
+                    type="button"
+                    className="btn d-flex align-items-center justify-content-between w-100 p-0 text-start"
+                    onClick={() => setShowCalculator((prev) => !prev)}
+                    aria-expanded={showCalculator}
+                  >
                     <div className="d-flex align-items-center gap-2">
-                      <span className="text-secondary">⚙️</span>
+                      <Calculator size={16} className="text-secondary" />
                       <div>
-                        <h6 className="fw-bold small text-dark mb-0">Advanced</h6>
-                        <p className="text-muted mb-0" style={{ fontSize: "0.75rem" }}>Optional settings for this expense.</p>
+                        <h6 className="fw-bold small text-dark mb-0">One-off payment</h6>
+                        <p className="text-muted mb-0" style={{ fontSize: "0.75rem" }}>
+                          Spread a single payment across months, and log it as paid.
+                        </p>
                       </div>
                     </div>
-                    <div className="form-check form-switch m-0">
-                      <input
-                        className="form-check-input cursor-pointer"
-                        type="checkbox"
-                        checked={showCalculator}
-                        onChange={(e) => setShowCalculator(e.target.checked)}
-                      />
-                    </div>
-                  </div>
+                    <ChevronDown
+                      size={16}
+                      className="text-muted flex-shrink-0"
+                      style={{
+                        transition: "transform .15s",
+                        transform: showCalculator ? "rotate(180deg)" : "none",
+                      }}
+                    />
+                  </button>
 
                   {showCalculator && (
                     <div className="card bg-white border p-3 mt-3 rounded-3 shadow-sm">
-                      <div className="d-flex align-items-center gap-2 mb-2">
-                        <Calculator size={16} className="text-primary" />
-                        <h6 className="fw-bold small text-dark mb-0">Spread a one-off cost</h6>
-                      </div>
-                      <p className="text-muted small mb-3" style={{ fontSize: "0.75rem" }}>Calculate the monthly average for a single payment over X months.</p>
-
                       <div className="row g-2 align-items-end">
-                        <div className="col-12 col-sm-6">
+                        <div className="col-12 col-sm-4">
                           <label className="form-label small text-muted mb-1">Total Single Payment Amount</label>
                           <div className="input-group input-group-sm">
                             <span className="input-group-text">£</span>
@@ -581,7 +656,16 @@ export default function Expenses() {
                             />
                           </div>
                         </div>
-                        <div className="col-12 col-sm-6">
+                        <div className="col-12 col-sm-4">
+                          <label className="form-label small text-muted mb-1">Date Paid</label>
+                          <input
+                            type="date"
+                            className="form-control form-control-sm"
+                            value={calcDate}
+                            onChange={(e) => setCalcDate(e.target.value)}
+                          />
+                        </div>
+                        <div className="col-12 col-sm-4">
                           <label className="form-label small text-muted mb-1">Number of Months</label>
                           <input
                             type="number"
@@ -593,16 +677,26 @@ export default function Expenses() {
                         </div>
                       </div>
 
-                      <div className="d-flex align-items-center justify-content-between mt-3 pt-2 border-top">
+                      <div className="d-flex align-items-center justify-content-between mt-3 pt-2 border-top flex-wrap gap-2">
                         <div className="small text-muted">
-                          Resulting Monthly Cost: <strong className="text-primary">£{calculatedMonthlySplit}</strong>/mo
+                          <div>
+                            Resulting Monthly Cost: <strong className="text-primary">£{calculatedMonthlySplit}</strong>/mo
+                          </div>
+                          {calculatedEndDate && (
+                            <div>
+                              Covers costs through{" "}
+                              <strong className="text-dark">{formatDisplayDate(calculatedEndDate)}</strong> — sets
+                              the expected end date
+                            </div>
+                          )}
                         </div>
                         <button
                           type="button"
                           className="btn btn-primary btn-sm px-3 fw-semibold"
+                          disabled={!(parseFloat(calcAmount) > 0)}
                           onClick={handleApplyCalculatedCost}
                         >
-                          Apply to Monthly Cost
+                          Apply &amp; log payment
                         </button>
                       </div>
                     </div>
