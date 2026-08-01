@@ -49,6 +49,14 @@ export default function Expenses() {
 
   const activeExpense = selectedIndex !== null && expenses[selectedIndex] ? expenses[selectedIndex] : expenses[0];
 
+  // How much of the monthly cost is still unassigned across contributors —
+  // surfaced next to the total so it's obvious the split doesn't add up yet.
+  const totalPaid = Object.values(activeExpense?.paidBy || {}).reduce(
+    (sum, amount) => sum + Number(amount || 0),
+    0
+  );
+  const remainingToSplit = Number(activeExpense?.monthlyCost || 0) - totalPaid;
+
   const handleSelectExpense = (index) => {
     setSelectedIndex(index);
     setActiveView("edit");
@@ -456,8 +464,16 @@ export default function Expenses() {
                       <span className="text-secondary">👥</span>
                       <h6 className="fw-bold small text-dark mb-0">Contributors</h6>
                     </div>
-                    <small className="fw-bold text-muted" style={{ fontSize: "0.75rem" }}>
+                    <small className="fw-bold text-muted text-end" style={{ fontSize: "0.75rem" }}>
                       Total: £{Number(activeExpense.monthlyCost || 0).toFixed(2)}/month
+                      {Math.abs(remainingToSplit) > 0.004 && (
+                        <span className={remainingToSplit > 0 ? "text-warning" : "text-danger"}>
+                          {" "}
+                          ({remainingToSplit > 0
+                            ? `£${remainingToSplit.toFixed(2)} remaining`
+                            : `£${Math.abs(remainingToSplit).toFixed(2)} over`})
+                        </span>
+                      )}
                     </small>
                   </div>
                   <p className="text-muted small mb-3" style={{ fontSize: "0.75rem" }}>How is this paid between you?</p>
