@@ -316,7 +316,7 @@ export default function EditorShell() {
             </div>
           )}
           {loading ? (
-            <LoadingSpinner label="Loading your data…" />
+            <LoadingSpinner />
           ) : (
             <Outlet context={{ payload, setPayload }} />
           )}

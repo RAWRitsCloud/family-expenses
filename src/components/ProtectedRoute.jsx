@@ -13,7 +13,7 @@ export const ProtectedRoute = () => {
   }
 
   if (loading) {
-    return <LoadingSpinner label="Checking permissions…" fullScreen />;
+    return <LoadingSpinner fullScreen />;
   }
 
   // If not logged in, go to login
