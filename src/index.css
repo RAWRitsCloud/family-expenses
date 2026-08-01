@@ -1,0 +1,10 @@
+/* iOS Safari auto-zooms the viewport when a focused text input's font-size is
+   under 16px. Bootstrap's compact form controls (form-control-sm etc.) render
+   smaller than that, so pin form fields to 16px on mobile widths to stop the
+   zoom — desktop keeps Bootstrap's normal sizing. */
+@media (max-width: 767.98px) {
+  .form-control,
+  .form-select {
+    font-size: 16px;
+  }
+}
