@@ -153,8 +153,29 @@ export default function Expenses() {
     return Number((amt / m).toFixed(2));
   }, [calcAmount, calcMonths]);
 
+  // Applies the calculated split as the ongoing monthly cost, and logs the
+  // actual lump sum paid as a payment entry so there's a record of it.
   const handleApplyCalculatedCost = () => {
-    updateActiveExpense("monthlyCost", calculatedMonthlySplit);
+    if (selectedIndex === null || !activeExpense) return;
+    const oneOffAmount = parseFloat(calcAmount) || 0;
+    const months = parseInt(calcMonths, 10) || 1;
+    const currentEntries = Array.isArray(activeExpense.entries) ? activeExpense.entries : [];
+    const updatedExpenses = [...expenses];
+    updatedExpenses[selectedIndex] = {
+      ...updatedExpenses[selectedIndex],
+      monthlyCost: calculatedMonthlySplit,
+      entries: [
+        ...currentEntries,
+        {
+          date: new Date().toISOString().slice(0, 10),
+          description: `One-off payment (spread over ${months} month${months === 1 ? "" : "s"})`,
+          amount: oneOffAmount,
+        },
+      ],
+    };
+    setRawData({ ...rawData, expenses: updatedExpenses });
+    setCalcAmount("");
+    setCalcMonths(1);
     setShowCalculator(false);
   };
 
@@ -554,14 +575,16 @@ export default function Expenses() {
                   </div>
                 </div>
 
-                {/* Advanced / Single Payment Calculator Section */}
+                {/* Single Payment Calculator Section */}
                 <div className="bg-light p-3 rounded-4 border">
                   <div className="d-flex align-items-center justify-content-between">
                     <div className="d-flex align-items-center gap-2">
-                      <span className="text-secondary">⚙️</span>
+                      <Calculator size={16} className="text-secondary" />
                       <div>
-                        <h6 className="fw-bold small text-dark mb-0">Advanced</h6>
-                        <p className="text-muted mb-0" style={{ fontSize: "0.75rem" }}>Optional settings for this expense.</p>
+                        <h6 className="fw-bold small text-dark mb-0">One-off payment</h6>
+                        <p className="text-muted mb-0" style={{ fontSize: "0.75rem" }}>
+                          Spread a single payment across months, and log it as paid.
+                        </p>
                       </div>
                     </div>
                     <div className="form-check form-switch m-0">
@@ -576,12 +599,6 @@ export default function Expenses() {
 
                   {showCalculator && (
                     <div className="card bg-white border p-3 mt-3 rounded-3 shadow-sm">
-                      <div className="d-flex align-items-center gap-2 mb-2">
-                        <Calculator size={16} className="text-primary" />
-                        <h6 className="fw-bold small text-dark mb-0">Spread a one-off cost</h6>
-                      </div>
-                      <p className="text-muted small mb-3" style={{ fontSize: "0.75rem" }}>Calculate the monthly average for a single payment over X months.</p>
-
                       <div className="row g-2 align-items-end">
                         <div className="col-12 col-sm-6">
                           <label className="form-label small text-muted mb-1">Total Single Payment Amount</label>
@@ -616,9 +633,10 @@ export default function Expenses() {
                         <button
                           type="button"
                           className="btn btn-primary btn-sm px-3 fw-semibold"
+                          disabled={!(parseFloat(calcAmount) > 0)}
                           onClick={handleApplyCalculatedCost}
                         >
-                          Apply to Monthly Cost
+                          Apply &amp; log payment
                         </button>
                       </div>
                     </div>
