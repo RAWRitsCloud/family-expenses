@@ -4,7 +4,9 @@
    zoom — desktop keeps Bootstrap's normal sizing. */
 @media (max-width: 767.98px) {
   .form-control,
-  .form-select {
+  .form-select,
+  .input-group-sm > .form-control,
+  .input-group-sm > .form-select {
     font-size: 16px;
   }
 }
