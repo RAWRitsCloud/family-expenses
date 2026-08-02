@@ -406,7 +406,7 @@ export default function Expenses() {
                         onChange={(e) => updateActiveExpense("name", e.target.value)}
                       />
                     </div>
-                    <div className="col-12 col-md-4">
+                    <div className="col-10 col-md-4">
                       <label className="form-label small fw-semibold text-muted">Category</label>
                       <select
                         className="form-select form-select-sm bg-white"
@@ -418,8 +418,8 @@ export default function Expenses() {
                         ))}
                       </select>
                     </div>
-                    <div className="col-12 col-md-2">
-                      <label className="form-label small fw-semibold text-muted d-block">Icon</label>
+                    <div className="col-2 col-md-2 d-flex flex-column align-items-center align-items-md-start mt-4 mt-md-0">
+                      <label className="form-label small fw-semibold text-muted d-none d-md-block">Icon</label>
                       <EmojiField
                         value={activeExpense.emoji || "📦"}
                         onSelect={(emoji) => updateActiveExpense("emoji", emoji)}
