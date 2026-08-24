@@ -946,6 +946,17 @@ export default function Dashboard() {
             </div>
           ) : (
           <>
+          {/* MOBILE ONLY: TOTAL MONTHLY CARD */}
+          <div className="card border-0 shadow-sm mb-4 d-lg-none">
+            <div className="card-body p-3">
+              <h6 className="text-uppercase fw-bold text-muted mb-1" style={{ fontSize: "0.75rem" }}>
+                Monthly
+              </h6>
+              <h1 className="card-title fs-2 mb-1 text-dark">{formatCurrency(totalMonthlyCost)}</h1>
+              <h6 className="card-subtitle text-body-secondary small">{formatCurrency(totalYearlyCost)} per year</h6>
+            </div>
+          </div>
+
           {/* MOBILE ONLY: KIDS SUMMARY CARDS ABOVE CATEGORIES GRAPH */}
           <div className="d-lg-none mb-4">
             <h6 className="text-uppercase fw-bold text-muted mb-2" style={{ fontSize: "0.75rem" }}>
