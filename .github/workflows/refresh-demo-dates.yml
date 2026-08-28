@@ -1,0 +1,46 @@
+name: Refresh Demo Example Dates
+
+# Keeps the bundled demo data (src/data/expenses.json) from looking stale.
+# scripts/refresh-demo-dates.mjs recomputes each hardcoded date relative to
+# "today" and this workflow commits the result once a month. Pushing that
+# change to main also triggers the two Azure Static Web Apps deploy
+# workflows (they build on push to main), so the live and demo sites pick
+# up the refreshed dates automatically.
+
+on:
+  schedule:
+    # A little before the deploy workflows' own monthly "17 6 1 * *" cron,
+    # so that scheduled rebuild also sees the freshly refreshed dates.
+    - cron: "0 6 1 * *"
+  workflow_dispatch:
+
+jobs:
+  refresh-demo-dates:
+    runs-on: ubuntu-latest
+    name: Refresh Demo Example Dates
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: main
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+
+      - name: Refresh demo dates
+        run: node scripts/refresh-demo-dates.mjs
+
+      - name: Commit and push if changed
+        run: |
+          if git diff --quiet -- src/data/expenses.json; then
+            echo "Demo dates already current, nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/data/expenses.json
+          git commit -m "Refresh example expense dates for demo data"
+          git push origin HEAD:main
