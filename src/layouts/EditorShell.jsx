@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { getExpenses, getFamilyDisplayNames, saveExpenses } from "../api/expensesApi";
 import LoadingSpinner from "../components/LoadingSpinner";
+import Sheet from "../components/Sheet";
 
 export default function EditorShell() {
   const location = useLocation();
@@ -114,29 +115,30 @@ export default function EditorShell() {
     <div className="container-fluid bg-light px-0">
       <div className="row g-0">
 
-        {/* MOBILE TOP HEADER (< lg) - Mirrors dashboard header layout */}
-        <div className="col-12 bg-dark text-white p-3 d-flex align-items-center justify-content-between d-lg-none flex-shrink-0 shadow-sm">
+        {/* MOBILE CHROME (< lg): translucent header + pill nav, sticky over scrolling content */}
+        <div className="col-12 d-lg-none chrome-sticky">
+        <div className="chrome-dark p-3 d-flex align-items-center justify-content-between">
           <div className="d-flex align-items-center gap-2 text-truncate pe-2">
             <img src={brandIcon} alt="" width="38" height="38" className="flex-shrink-0" />
             <div className="text-truncate">
               <span className="d-block fw-bold text-truncate" style={{ fontSize: "0.9rem", lineHeight: "1.1" }}>Our Family Money</span>
-              <small className="text-white-50 text-truncate d-block" style={{ fontSize: "0.7rem" }}>{familyNames || "Family"}</small>
+              <small className="text-white-50 text-truncate d-block" style={{ fontSize: "0.75rem" }}>{familyNames || "Family"}</small>
             </div>
           </div>
 
           <div className="d-flex align-items-center gap-2 flex-shrink-0">
             <button
               type="button"
-              className="btn btn-outline-light btn-sm px-2 py-1"
-              style={{ fontSize: "0.75rem" }}
+              className="btn btn-outline-light btn-sm px-3 py-2"
+              style={{ fontSize: "0.85rem" }}
               onClick={handleExit}
             >
               Exit
             </button>
             <button
               type="button"
-              className="btn btn-primary btn-sm px-3 py-1 fw-semibold rounded-2 border-0 shadow-sm"
-              style={{ fontSize: "0.75rem" }}
+              className="btn btn-primary btn-sm px-3 py-2 fw-semibold rounded-2 border-0 shadow-sm"
+              style={{ fontSize: "0.85rem" }}
               onClick={handleSave}
               disabled={isSaving}
             >
@@ -146,12 +148,12 @@ export default function EditorShell() {
         </div>
 
         {/* 2. MOBILE NAVIGATION PILL BAR (< lg) - Hidden on Desktop */}
-        <div className="col-12 d-lg-none bg-white border-bottom px-3 py-2 d-flex justify-content-around align-items-center flex-shrink-0 shadow-sm">
+        <div className="chrome-light chrome-edge px-3 py-2 d-flex justify-content-around align-items-center">
           <NavLink
             to="/editor/expenses"
             state={{ payload }}
             className={({ isActive }) => `btn btn-sm rounded-pill px-3 py-1 fw-semibold text-decoration-none ${isActive ? "btn-primary" : "btn-light text-muted"}`}
-            style={{ fontSize: "0.75rem" }}
+            style={{ fontSize: "0.85rem" }}
           >
             Expenses
           </NavLink>
@@ -159,7 +161,7 @@ export default function EditorShell() {
             to="/editor/categories"
             state={{ payload }}
             className={({ isActive }) => `btn btn-sm rounded-pill px-3 py-1 fw-semibold text-decoration-none ${isActive ? "btn-primary" : "btn-light text-muted"}`}
-            style={{ fontSize: "0.75rem" }}
+            style={{ fontSize: "0.85rem" }}
           >
             Categories
           </NavLink>
@@ -167,7 +169,7 @@ export default function EditorShell() {
             to="/editor/family"
             state={{ payload }}
             className={({ isActive }) => `btn btn-sm rounded-pill px-3 py-1 fw-semibold text-decoration-none ${isActive ? "btn-primary" : "btn-light text-muted"}`}
-            style={{ fontSize: "0.75rem" }}
+            style={{ fontSize: "0.85rem" }}
           >
             Family
           </NavLink>
@@ -175,16 +177,17 @@ export default function EditorShell() {
             to="/editor/json"
             state={{ payload }}
             className={({ isActive }) => `btn btn-sm rounded-pill px-3 py-1 fw-semibold text-decoration-none ${isActive ? "btn-primary" : "btn-light text-muted"}`}
-            style={{ fontSize: "0.75rem" }}
+            style={{ fontSize: "0.85rem" }}
           >
             JSON
           </NavLink>
+        </div>
         </div>
 
         {/* 3. DESKTOP SIDEBAR - Fixed height block using sticky positioning so items never push down */}
         <aside
           className="col-lg-3 col-xl-2 bg-dark text-white p-3 d-none d-lg-flex flex-column justify-content-between"
-          style={{ height: "100vh", position: "sticky", top: 0, overflowY: "auto" }}
+          style={{ height: "100dvh", position: "sticky", top: 0, overflowY: "auto" }}
         >
           <div>
             <div className="d-flex align-items-center justify-content-between mb-4">
@@ -278,7 +281,7 @@ export default function EditorShell() {
                 <div className="text-white small fw-semibold" style={{ fontSize: "0.8rem" }}>
                   {saveError ? "Not saved" : lastSaved ? "All changes saved" : "Unsaved changes"}
                 </div>
-                <div style={{ fontSize: "0.70rem", color: "#6c757d" }}>
+                <div className="text-white-50" style={{ fontSize: "0.75rem" }}>
                   {lastSaved ? lastSaved.toLocaleTimeString() : "Save to commit to GitHub"}
                 </div>
               </div>
@@ -324,64 +327,42 @@ export default function EditorShell() {
 
       </div>
 
-      {/* Unsaved-changes prompt on exit (styled in-app modal, not window.confirm) */}
+      {/* Unsaved-changes prompt on exit: bottom sheet on phones, dialog elsewhere */}
       {exitPromptOpen && (
-        <>
-          <div className="modal fade show d-block" tabIndex="-1" role="dialog" style={{ zIndex: 1055 }}>
-            <div className="modal-dialog modal-dialog-centered">
-              <div className="modal-content border-0 shadow rounded-4">
-                <div className="modal-header border-0 pb-0">
-                  <h5 className="modal-title fw-bold">Unsaved changes</h5>
-                  <button
-                    type="button"
-                    className="btn-close"
-                    aria-label="Keep editing"
-                    onClick={() => setExitPromptOpen(false)}
-                  />
-                </div>
-                <div className="modal-body pt-2">
-                  <p className="text-muted mb-0">
-                    You have unsaved changes. Do you want to save them before leaving?
-                  </p>
-                  {saveError && (
-                    <div className="alert alert-danger py-2 px-3 small mt-3 mb-0">{saveError}</div>
-                  )}
-                </div>
-                <div className="modal-footer border-0 pt-0 flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className="btn btn-light"
-                    onClick={() => setExitPromptOpen(false)}
-                  >
-                    Keep editing
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-outline-danger"
-                    onClick={handleDiscardExit}
-                    disabled={isSaving}
-                  >
-                    Exit without saving
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-primary d-inline-flex align-items-center gap-2"
-                    onClick={handleSaveExit}
-                    disabled={isSaving}
-                  >
-                    <CloudUpload size={16} />
-                    {isSaving ? "Saving…" : "Save & exit"}
-                  </button>
-                </div>
+        <Sheet title="Unsaved changes" closeLabel="Keep editing" onClose={() => setExitPromptOpen(false)} zIndex={1055}>
+          {({ close }) => (
+            <div className="px-3 pb-3">
+              <p className="text-muted mb-3">
+                You have unsaved changes. Do you want to save them before leaving?
+              </p>
+              {saveError && (
+                <div className="alert alert-danger py-2 px-3 small mb-3">{saveError}</div>
+              )}
+              <div className="d-grid d-sm-flex justify-content-sm-end gap-2">
+                <button type="button" className="btn btn-light py-2" onClick={close}>
+                  Keep editing
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline-danger py-2"
+                  onClick={handleDiscardExit}
+                  disabled={isSaving}
+                >
+                  Exit without saving
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary py-2 d-inline-flex align-items-center justify-content-center gap-2"
+                  onClick={handleSaveExit}
+                  disabled={isSaving}
+                >
+                  <CloudUpload size={16} />
+                  {isSaving ? "Saving…" : "Save & exit"}
+                </button>
               </div>
             </div>
-          </div>
-          <div
-            className="modal-backdrop fade show"
-            style={{ zIndex: 1050 }}
-            onClick={() => setExitPromptOpen(false)}
-          />
-        </>
+          )}
+        </Sheet>
       )}
     </div>
   );

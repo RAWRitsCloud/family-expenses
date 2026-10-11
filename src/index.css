@@ -7,3 +7,328 @@
 .input-group-sm > .form-select {
   font-size: 16px;
 }
+
+/* ---------- Base ---------- */
+
+/* Keep the app clear of the notch / home indicator when installed as a PWA
+   (viewport-fit=cover). env() resolves to 0 everywhere else. */
+body {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  -webkit-font-smoothing: antialiased;
+  /* Money figures line up and don't jitter as values change. */
+  font-variant-numeric: tabular-nums;
+}
+
+/* Large type is tracked in, small caps type is tracked out. */
+h1, .h1, h2, .h2, h3, .h3 {
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+h4, .h4, h5, .h5, h6, .h6 {
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+.text-uppercase {
+  letter-spacing: 0.05em;
+}
+
+/* Inactive text on the dark chrome needs more than Bootstrap's 50% white. */
+.text-white-50 {
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+
+/* ---------- Instant press feedback ---------- */
+
+/* Drop the tap delay and double-tap-zoom on everything tappable. */
+a,
+button,
+label,
+select,
+summary,
+[role="button"],
+.btn,
+.nav-link,
+.press,
+th[aria-sort] {
+  touch-action: manipulation;
+}
+
+/* Bootstrap's own colour transitions, plus a fast transform for the press. */
+.btn {
+  transition:
+    color 0.15s ease-in-out,
+    background-color 0.15s ease-in-out,
+    border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out,
+    transform 100ms ease-out;
+}
+
+/* Responds on pointer-down, not on release. */
+.btn:not(:disabled):not(.disabled):not(.btn-close):not(.btn-link):active,
+.nav-link:active {
+  transform: scale(0.97);
+}
+.btn-link:not(:disabled):active {
+  opacity: 0.55;
+}
+
+/* Tappable rows / cards: tint on press rather than shrinking (they're large). */
+.press {
+  transition: background-color 100ms ease-out;
+}
+.press:active {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+th[aria-sort]:active {
+  opacity: 0.55;
+}
+
+/* Small icon-only buttons (edit / delete) get a real touch target. */
+.icon-btn {
+  min-width: 36px;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (pointer: coarse) {
+  .btn-sm:not(.btn-link):not(.btn-close),
+  .icon-btn {
+    min-height: 44px;
+  }
+  .icon-btn {
+    min-width: 44px;
+  }
+}
+
+/* ---------- Materials ---------- */
+
+/* Floating dark chrome (mobile headers). Content scrolls underneath. */
+.chrome-dark {
+  background-color: #212529;
+  color: #fff;
+}
+.chrome-light {
+  background-color: #fff;
+}
+.chrome-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+}
+@media (max-width: 991.98px) {
+  .chrome-sticky-down {
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+  }
+  /* Only go translucent where blur is supported; otherwise stay solid so text
+     scrolling underneath never shows through unblurred. */
+  @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    .chrome-dark {
+      background-color: rgba(33, 37, 41, 0.8);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      backdrop-filter: blur(20px) saturate(180%);
+      /* bright top edge: light catching the material */
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+    .chrome-light {
+      background-color: rgba(255, 255, 255, 0.8);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      backdrop-filter: blur(20px) saturate(180%);
+    }
+  }
+  /* Scroll edge: a soft fade where content meets the chrome, not a hard rule. */
+  .chrome-edge {
+    position: relative;
+  }
+  .chrome-edge::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    height: 14px;
+    background: linear-gradient(rgba(0, 0, 0, 0.07), rgba(0, 0, 0, 0));
+    pointer-events: none;
+  }
+}
+
+/* ---------- Sheet / dialog ---------- */
+
+.sheet-root {
+  position: fixed;
+  inset: 0;
+  z-index: 1060;
+}
+.sheet-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.sheet-panel {
+  position: absolute;
+  background: #fff;
+  color: var(--bs-body-color);
+  display: flex;
+  flex-direction: column;
+  outline: none;
+  overscroll-behavior: contain;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  will-change: transform, opacity;
+}
+.sheet-panel.is-reduced {
+  animation: sheet-fade 150ms ease-out both;
+}
+.sheet-grabber {
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.18);
+  margin: 8px auto 0;
+}
+.sheet-drag-zone {
+  touch-action: none;
+  cursor: grab;
+}
+.sheet-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Phone: bottom sheet. */
+@media (max-width: 575.98px) {
+  .sheet-panel {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: 92vh;
+    max-height: 92dvh;
+    border-radius: 20px 20px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+/* Larger screens: centred dialog. */
+@media (min-width: 576px) {
+  .sheet-root {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sheet-panel {
+    position: relative;
+    width: min(92vw, var(--sheet-width, 500px));
+    max-height: 90vh;
+    border-radius: 16px;
+  }
+  .sheet-grabber {
+    display: none;
+  }
+}
+
+@keyframes sheet-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ---------- Toast ---------- */
+
+.toast-host {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(env(safe-area-inset-bottom) + 16px);
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
+  pointer-events: none;
+  z-index: 1080;
+}
+.toast-pill {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 480px;
+  width: 100%;
+  padding: 6px 6px 6px 16px;
+  border-radius: 14px;
+  color: #fff;
+  background-color: rgba(33, 37, 41, 0.82);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  animation: toast-in 380ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+.toast-pill.is-leaving {
+  animation: toast-out 200ms ease-in both;
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(24px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes toast-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(12px) scale(0.98); }
+}
+@keyframes toast-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes toast-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* ---------- Accessibility preferences ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+  /* Replace slides / scales with a plain cross-fade. */
+  .btn:active,
+  .nav-link:active {
+    transform: none !important;
+  }
+  .collapsing {
+    transition: none !important;
+  }
+  .toast-pill {
+    animation-name: toast-fade-in;
+    animation-duration: 150ms;
+  }
+  .toast-pill.is-leaving {
+    animation-name: toast-fade-out;
+    animation-duration: 150ms;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .chrome-dark { background-color: #212529 !important; }
+  .chrome-light { background-color: #fff !important; }
+  .toast-pill { background-color: #212529; }
+  .chrome-dark,
+  .chrome-light,
+  .toast-pill,
+  .sheet-scrim {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  .sheet-scrim { background: rgba(0, 0, 0, 0.55); }
+}
+
+@media (prefers-contrast: more) {
+  .chrome-dark { background-color: #212529 !important; }
+  .chrome-light { background-color: #fff !important; border-bottom: 1px solid #000; }
+  .chrome-edge::after { display: none; }
+  .toast-pill { background-color: #000; border: 1px solid #fff; }
+  .sheet-panel { border: 1px solid #000; }
+  .text-white-50 { color: #fff !important; }
+  .text-muted { color: #3d4349 !important; }
+}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
+import { useToast } from "../../context/toast";
 import { Plus, Trash2, Search, ChevronRight, ChevronDown, ArrowLeft, SlidersHorizontal, Calculator } from "lucide-react";
 import { getCategoryData, getFamilyData, isExpenseActive } from "../../api/expensesApi";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
@@ -33,6 +34,7 @@ export default function Expenses() {
   // Shared editor state lives in EditorShell so the "Save to GitHub" button
   // persists the edits made here.
   const { payload: rawData, setPayload: setRawData } = useOutletContext();
+  const { showToast } = useToast();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeView, setActiveView] = useState("list");
@@ -158,9 +160,21 @@ export default function Expenses() {
 
   const handleDeleteExpense = () => {
     if (selectedIndex === null || !activeExpense) return;
+    const removed = activeExpense;
+    const removedIndex = selectedIndex;
     const updated = expenses.filter((_, idx) => idx !== selectedIndex);
     setRawData({ ...rawData, expenses: updated });
-    
+    showToast({
+      message: `Deleted ${removed?.name || "expense"}`,
+      actionLabel: "Undo",
+      onAction: () =>
+        setRawData((prev) => {
+          const list = [...(prev?.expenses || [])];
+          list.splice(Math.min(removedIndex, list.length), 0, removed);
+          return { ...prev, expenses: list };
+        }),
+    });
+
     if (updated.length > 0) {
       setSelectedIndex(Math.max(0, selectedIndex - 1));
     } else {

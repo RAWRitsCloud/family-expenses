@@ -3,11 +3,13 @@ import { useOutletContext } from "react-router-dom";
 import { Plus, Trash2 } from "lucide-react";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 import EmojiField from "../../components/EmojiField";
+import { useToast } from "../../context/toast";
 
 export default function Categories() {
   useDocumentTitle("Categories");
   // Shared editor state lives in EditorShell so edits are included when saving.
   const { payload: rawData, setPayload: setRawData } = useOutletContext();
+  const { showToast } = useToast();
 
   const categories = rawData?.categories || [];
   const expenses = rawData?.expenses || [];
@@ -50,8 +52,19 @@ export default function Categories() {
   };
 
   const handleDeleteCategory = (index) => {
+    const removed = categories[index];
     const updated = categories.filter((_, i) => i !== index);
     setRawData({ ...rawData, categories: updated });
+    showToast({
+      message: `Deleted ${removed?.name || "category"}`,
+      actionLabel: "Undo",
+      onAction: () =>
+        setRawData((prev) => {
+          const list = [...(prev?.categories || [])];
+          list.splice(Math.min(index, list.length), 0, removed);
+          return { ...prev, categories: list };
+        }),
+    });
   };
 
   return (

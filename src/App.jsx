@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/auth";
+import { ToastProvider } from "./context/toast";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 import Login from "./pages/login";
@@ -14,6 +15,7 @@ import JsonEditor from "./pages/editor/json";
 export default function App() {
   return (
     <AuthProvider>
+      <ToastProvider>
       <BrowserRouter>
         <Routes>
           {/* Public Login Route */}
@@ -38,6 +40,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+      </ToastProvider>
     </AuthProvider>
   );
 }
