@@ -1,4 +1,5 @@
 import { useOutletContext } from "react-router-dom";
+import { useToast } from "../../context/toast";
 import { Plus, Trash2, Heart, Users } from "lucide-react";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 
@@ -12,6 +13,7 @@ export default function Family() {
   useDocumentTitle("Family");
   // Shared editor state lives in EditorShell so edits are included when saving.
   const { payload: rawData, setPayload: setRawData } = useOutletContext();
+  const { showToast } = useToast();
 
   const family = rawData?.family || { children: [], payers: [] };
 
@@ -72,10 +74,21 @@ export default function Family() {
   };
 
   const handleDeleteChild = (index) => {
+    const removed = family.children[index];
     const updated = family.children.filter((_, i) => i !== index);
     setRawData({
       ...rawData,
       family: { ...family, children: updated },
+    });
+    showToast({
+      message: `Removed ${removed?.name || "child"}`,
+      actionLabel: "Undo",
+      onAction: () =>
+        setRawData((prev) => {
+          const list = [...(prev?.family?.children || [])];
+          list.splice(Math.min(index, list.length), 0, removed);
+          return { ...prev, family: { ...prev.family, children: list } };
+        }),
     });
   };
 
@@ -127,10 +140,21 @@ export default function Family() {
   };
 
   const handleDeletePayer = (index) => {
+    const removed = family.payers[index];
     const updated = family.payers.filter((_, i) => i !== index);
     setRawData({
       ...rawData,
       family: { ...family, payers: updated },
+    });
+    showToast({
+      message: `Removed ${removed?.name || "payer"}`,
+      actionLabel: "Undo",
+      onAction: () =>
+        setRawData((prev) => {
+          const list = [...(prev?.family?.payers || [])];
+          list.splice(Math.min(index, list.length), 0, removed);
+          return { ...prev, family: { ...prev.family, payers: list } };
+        }),
     });
   };
 

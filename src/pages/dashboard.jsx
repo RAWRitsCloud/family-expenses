@@ -24,6 +24,7 @@ import ChartDataLabels from "chartjs-plugin-datalabels";
 import { Bar } from "react-chartjs-2";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import LoadingSpinner from "../components/LoadingSpinner";
+import { useToast } from "../context/toast";
 
 ChartJS.register(
   CategoryScale,
@@ -101,8 +102,9 @@ export default function Dashboard() {
   const [entrySaving, setEntrySaving] = useState(false);
   const [entryError, setEntryError] = useState(null);
   const [sortBy, setSortBy] = useState({ key: "name", dir: "asc" });
-  const [pendingDelete, setPendingDelete] = useState(null);
-  const pendingDeleteTimer = useRef(null);
+  const { showToast } = useToast();
+  // Always the latest payload, so a deferred Undo never works from a stale copy.
+  const payloadRef = useRef(null);
   const [editing, setEditing] = useState(null);
 
   useEffect(() => {
@@ -111,7 +113,10 @@ export default function Dashboard() {
     async function loadPayload() {
       try {
         const data = await getExpenses();
-        if (!ignore) setPayload(data);
+        if (!ignore) {
+          payloadRef.current = data;
+          setPayload(data);
+        }
       } catch {
         if (!ignore) setPayload(null);
       } finally {
@@ -254,7 +259,11 @@ export default function Dashboard() {
     };
   }, [categories, expenses, categoryMap]);
 
+  const reduceMotion =
+    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   const chartOptions = {
+    ...(reduceMotion ? { animation: false } : {}),
     indexAxis: "y",
     responsive: true,
     maintainAspectRatio: false,
@@ -374,7 +383,7 @@ export default function Dashboard() {
       >
         <span className="d-inline-flex align-items-center gap-1">
           {label}
-          <span style={{ fontSize: "0.7rem", opacity: active ? 1 : 0.35 }}>
+          <span style={{ fontSize: "0.75rem", opacity: active ? 1 : 0.35 }}>
             {active ? (sortBy.dir === "asc" ? "▲" : "▼") : "↕"}
           </span>
         </span>
@@ -414,6 +423,7 @@ export default function Dashboard() {
   // Persist a mutated payload: update local state immediately, then save
   // (GitHub in live mode, sessionStorage in demo — handled by saveExpenses).
   const persistPayload = async (nextPayload) => {
+    payloadRef.current = nextPayload;
     setPayload(nextPayload);
     setEntrySaving(true);
     setEntryError(null);
@@ -433,28 +443,34 @@ export default function Dashboard() {
   };
 
   const mutateEntries = (rawIndex, updater) => {
-    if (!payload || rawIndex < 0) return;
-    const rawExpenses = payload.expenses || [];
+    const current = payloadRef.current;
+    if (!current || rawIndex < 0) return;
+    const rawExpenses = current.expenses || [];
     const target = rawExpenses[rawIndex];
     if (!target) return;
     const nextEntries = updater(Array.isArray(target.entries) ? target.entries : []);
     const nextExpenses = rawExpenses.map((e, i) =>
       i === rawIndex ? { ...e, entries: nextEntries } : e
     );
-    persistPayload({ ...payload, expenses: nextExpenses });
+    persistPayload({ ...current, expenses: nextExpenses });
   };
 
-  // Inline two-step delete: first click arms ("Confirm?"), second click removes.
-  // Auto-disarms after a few seconds so it never gets stuck.
+  // Delete immediately, then offer Undo (forgiveness over confirmation). Undo
+  // puts the entry back at its original position.
   const handleDeleteClick = (rawIndex, entry) => {
-    if (pendingDeleteTimer.current) clearTimeout(pendingDeleteTimer.current);
-    if (pendingDelete === entry) {
-      setPendingDelete(null);
-      mutateEntries(rawIndex, (entries) => entries.filter((e) => e !== entry));
-    } else {
-      setPendingDelete(entry);
-      pendingDeleteTimer.current = setTimeout(() => setPendingDelete(null), 3500);
-    }
+    const original = payloadRef.current?.expenses?.[rawIndex]?.entries;
+    const position = Array.isArray(original) ? original.indexOf(entry) : -1;
+    mutateEntries(rawIndex, (entries) => entries.filter((e) => e !== entry));
+    showToast({
+      message: "Payment deleted",
+      actionLabel: "Undo",
+      onAction: () =>
+        mutateEntries(rawIndex, (entries) => {
+          const next = [...entries];
+          next.splice(position >= 0 ? Math.min(position, next.length) : next.length, 0, entry);
+          return next;
+        }),
+    });
   };
 
   // Inline add/edit: one shared form. `entry: null` means adding a new payment;
@@ -664,7 +680,7 @@ export default function Dashboard() {
             <div className="table-responsive">
               <table className="table table-sm align-middle mb-0 bg-white rounded-3">
                 <thead>
-                  <tr className="text-uppercase text-muted" style={{ fontSize: "0.7rem" }}>
+                  <tr className="text-uppercase text-muted" style={{ fontSize: "0.75rem" }}>
                     <th>Date</th>
                     <th>Description</th>
                     <th className="text-end">Amount</th>
@@ -685,7 +701,7 @@ export default function Dashboard() {
                           <div className="d-flex justify-content-end align-items-center gap-1">
                             <button
                               type="button"
-                              className="btn btn-sm btn-link text-secondary p-0"
+                              className="btn btn-sm btn-link text-secondary p-0 icon-btn"
                               aria-label="Edit payment"
                               disabled={entrySaving}
                               onClick={(e) => {
@@ -695,24 +711,9 @@ export default function Dashboard() {
                             >
                               <Pencil size={15} />
                             </button>
-                            {pendingDelete === entry ? (
-                              <button
+                            <button
                                 type="button"
-                                className="btn btn-danger btn-sm py-0 px-2"
-                                style={{ fontSize: "0.7rem" }}
-                                aria-label="Confirm delete payment"
-                                disabled={entrySaving}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteClick(rawIndex, entry);
-                                }}
-                              >
-                                Confirm?
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-link text-danger p-0"
+                                className="btn btn-sm btn-link text-danger p-0 icon-btn"
                                 aria-label="Delete payment"
                                 disabled={entrySaving}
                                 onClick={(e) => {
@@ -722,7 +723,6 @@ export default function Dashboard() {
                               >
                                 <Trash2 size={15} />
                               </button>
-                            )}
                           </div>
                         </td>
                       </tr>
@@ -778,7 +778,7 @@ export default function Dashboard() {
                       <span className="fw-bold small text-nowrap">{formatCurrency(entry.amount)}</span>
                       <button
                         type="button"
-                        className="btn btn-sm btn-link text-secondary p-0"
+                        className="btn btn-sm btn-link text-secondary p-0 icon-btn"
                         aria-label="Edit payment"
                         disabled={entrySaving}
                         onClick={(e) => {
@@ -788,24 +788,9 @@ export default function Dashboard() {
                       >
                         <Pencil size={15} />
                       </button>
-                      {pendingDelete === entry ? (
-                        <button
+                      <button
                           type="button"
-                          className="btn btn-danger btn-sm py-0 px-2"
-                          style={{ fontSize: "0.7rem" }}
-                          aria-label="Confirm delete payment"
-                          disabled={entrySaving}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteClick(rawIndex, entry);
-                          }}
-                        >
-                          Confirm?
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-link text-danger p-0"
+                          className="btn btn-sm btn-link text-danger p-0 icon-btn"
                           aria-label="Delete payment"
                           disabled={entrySaving}
                           onClick={(e) => {
@@ -815,7 +800,6 @@ export default function Dashboard() {
                         >
                           <Trash2 size={15} />
                         </button>
-                      )}
                     </div>
                   </div>
                 )
@@ -836,7 +820,7 @@ export default function Dashboard() {
       <div className="row min-vh-100">
 
         {/* SIDEBAR / TOP NAVIGATION */}
-        <aside className="col-lg-3 col-xl-2 bg-dark text-white p-3 d-flex flex-column justify-content-between">
+        <aside className="col-lg-3 col-xl-2 chrome-dark chrome-sticky-down p-3 d-flex flex-column justify-content-between">
           <div>
             <div className="d-flex align-items-center justify-content-between mb-lg-4">
               <Link className="d-flex align-items-center gap-2 text-white text-decoration-none" to="/Dashboard">
@@ -857,7 +841,8 @@ export default function Dashboard() {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="btn btn-danger btn-sm d-flex align-items-center gap-1"
+                  aria-label="Sign out"
+                  className="btn btn-outline-light btn-sm d-flex align-items-center gap-1"
                 >
                   <LogOut size={16} />
                 </button>
@@ -904,7 +889,7 @@ export default function Dashboard() {
                         <div className="overflow-hidden">
                           <small
                             className="text-uppercase text-white-50 fw-bold d-block text-truncate"
-                            style={{ fontSize: "0.7rem" }}
+                            style={{ fontSize: "0.75rem" }}
                           >
                             {displayName}
                           </small>
@@ -984,7 +969,7 @@ export default function Dashboard() {
                         <div className="overflow-hidden">
                           <small
                             className="text-uppercase text-muted fw-bold d-block text-truncate"
-                            style={{ fontSize: "0.65rem" }}
+                            style={{ fontSize: "0.75rem" }}
                           >
                             {displayName}
                           </small>
@@ -1103,7 +1088,7 @@ export default function Dashboard() {
 
                 <div className="d-flex align-items-center gap-2 flex-wrap">
                   <div className="d-flex align-items-center gap-2">
-                    <label className="small text-muted fw-bold mb-0" style={{ fontSize: "0.65rem" }}>
+                    <label className="small text-muted fw-bold mb-0" style={{ fontSize: "0.75rem" }}>
                       FOR CHILD
                     </label>
                     <select
@@ -1124,7 +1109,7 @@ export default function Dashboard() {
                   </div>
 
                   <div className="d-flex align-items-center gap-2">
-                    <label className="small text-muted fw-bold mb-0" style={{ fontSize: "0.65rem" }}>
+                    <label className="small text-muted fw-bold mb-0" style={{ fontSize: "0.75rem" }}>
                       WHAT SORT?
                     </label>
                     <select
@@ -1158,7 +1143,7 @@ export default function Dashboard() {
               <div className="table-responsive d-none d-lg-block">
                 <table className="table align-middle">
                   <thead>
-                    <tr className="text-uppercase text-muted border-bottom small" style={{ fontSize: "0.7rem" }}>
+                    <tr className="text-uppercase text-muted border-bottom small" style={{ fontSize: "0.75rem" }}>
                       {sortHeader("Expense", "name")}
                       {sortHeader("For", "for")}
                       {sortHeader("Category", "category")}
@@ -1174,7 +1159,7 @@ export default function Dashboard() {
 
                       return (
                         <Fragment key={rowKey}>
-                          <tr onClick={() => toggleRow(rowKey)} style={{ cursor: "pointer" }}>
+                          <tr className="press" onClick={() => toggleRow(rowKey)} style={{ cursor: "pointer" }}>
                             {/* Name + Emoji */}
                             <td className="fw-bold text-dark">
                               <span className="me-2">{expense.emoji || catInfo.emoji || "📦"}</span>
@@ -1320,7 +1305,7 @@ export default function Dashboard() {
                           </div>
                           <div className="text-end flex-shrink-0">
                             <div className="fw-bold">{formatCurrency(expense.monthlyCost)}</div>
-                            <small className="text-muted lh-1 d-block" style={{ fontSize: "0.7rem" }}>
+                            <small className="text-muted lh-1 d-block" style={{ fontSize: "0.75rem" }}>
                               estimated
                               <br />
                               monthly
@@ -1364,7 +1349,7 @@ export default function Dashboard() {
                         {/* Paid by */}
                         {paymentPills.length > 0 && (
                           <div className="mt-3">
-                            <small className="text-muted d-block mb-1" style={{ fontSize: "0.7rem" }}>
+                            <small className="text-muted d-block mb-1" style={{ fontSize: "0.75rem" }}>
                               Paid by
                             </small>
                             <div className="d-flex flex-wrap gap-2">
@@ -1378,7 +1363,7 @@ export default function Dashboard() {
                                         width: "26px",
                                         height: "26px",
                                         backgroundColor: pColor,
-                                        fontSize: "0.7rem",
+                                        fontSize: "0.75rem",
                                       }}
                                     >
                                       {payeeName.charAt(0)}
